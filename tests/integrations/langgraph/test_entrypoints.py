@@ -1,6 +1,7 @@
 """The streaming-event, as-completed batch, and transform entry points, and unrecordable calls."""
 
 import asyncio
+import threading
 from collections.abc import AsyncIterator, Callable, Iterable
 from typing import Any
 
@@ -93,6 +94,26 @@ def test_batch_as_completed_returns_or_raises_failures() -> None:
     assert isinstance(pairs[0], ValueError)
     assert pairs[1] == {"count": 3}
     assert runtime.run_sync(executions(runtime))[0].context.graph_id == "graph"
+
+
+def test_closing_batch_as_completed_early_cancels_the_pending_futures() -> None:
+    release = threading.Event()
+
+    def wait_for_release(state: State) -> State:
+        if state["count"] > 1:
+            release.wait(timeout=10)
+        return increment(state)
+
+    runtime = XAIRuntime()
+    graph = runtime.instrument(linear_graph(("wait", wait_for_release)))
+    pairs = graph.batch_as_completed([{"count": 1}, {"count": 2}, {"count": 3}])
+
+    first = next(pairs)
+    release.set()
+    pairs.close()
+
+    assert first == (0, {"count": 2})
+    assert len(runtime.run_sync(executions(runtime))) == 3
 
 
 async def test_abatch_as_completed_records_one_run_per_input() -> None:
