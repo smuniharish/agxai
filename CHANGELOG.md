@@ -91,7 +91,7 @@ a disclosure policy. This release describes the complete public API.
 
 ### Tooling
 
-- Python 3.12 to 3.14, fully typed (`py.typed`), with 100% statement and
+- Python 3.12 to 3.15, fully typed (`py.typed`), with 100% statement and
   branch coverage, property-based tests, a LangGraph feature matrix, and
   offline tests of the model-backed examples with a fake chat model. Live
   suites cover PostgreSQL, OpenTelemetry, Langfuse, and LLM endpoints.

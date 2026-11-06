@@ -8,7 +8,7 @@
   <a href="https://github.com/smuniharish/agxai/actions/workflows/ci.yml"><img src="https://github.com/smuniharish/agxai/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <a href="https://agxai.readthedocs.io/"><img src="https://readthedocs.org/projects/agxai/badge/?version=latest" alt="Documentation"></a>
   <a href="https://pypi.org/project/agxai/"><img src="https://img.shields.io/pypi/v/agxai.svg" alt="PyPI"></a>
-  <a href="https://pypi.org/project/agxai/"><img src="https://img.shields.io/badge/python-3.12%20%7C%203.13%20%7C%203.14-blue.svg" alt="Python 3.12 | 3.13 | 3.14"></a>
+  <a href="https://pypi.org/project/agxai/"><img src="https://img.shields.io/badge/python-3.12%20%7C%203.13%20%7C%203.14%20%7C%203.15-blue.svg" alt="Python 3.12 | 3.13 | 3.14 | 3.15"></a>
   <img src="https://img.shields.io/badge/coverage-100%25-brightgreen.svg" alt="Coverage 100%">
   <img src="https://img.shields.io/badge/typing-typed-blue.svg" alt="Typed">
   <a href="https://github.com/smuniharish/agxai/blob/master/LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-blue.svg" alt="License: Apache 2.0"></a>
@@ -75,7 +75,7 @@ ID.
   CrewAI or your own loop, and `ProvenanceStore` for your database. A complete
   PostgreSQL store is included as an example.
 - **Small and typed.** The core depends only on Pydantic, ships type hints,
-  and is tested on Python 3.12 to 3.14 with 100% statement and branch coverage.
+  and is tested on Python 3.12 to 3.15 with 100% statement and branch coverage.
 
 ## Installation
 
