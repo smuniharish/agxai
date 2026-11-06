@@ -75,7 +75,7 @@ dropped event is kept nowhere: not in the store, not in the observability
 backend, and not in the run's `Execution`.
 
 ```python
-from langgraph_xai import CapturePolicy, PolicyAction, PolicyDecision
+from agxai import CapturePolicy, PolicyAction, PolicyDecision
 
 
 class NoStateValuesForEU:
@@ -91,7 +91,7 @@ class NoStateValuesForEU:
         )
 
 
-xai.register(CapturePolicy, NoStateValuesForEU())
+runtime.register(CapturePolicy, NoStateValuesForEU())
 ```
 
 Running the same one-node graph for two tenants:
@@ -157,7 +157,7 @@ class CustomerSafePolicy:
         )
 
 
-xai.register(PolicyProvider, CustomerSafePolicy())
+runtime.register(PolicyProvider, CustomerSafePolicy())
 ```
 
 The [Explanations](explanations.md#example-two-audiences-one-decision) page

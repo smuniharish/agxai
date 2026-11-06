@@ -7,35 +7,35 @@ belongs to an extra: `langsmith`, `langfuse`, or `otel`. See
 guarantees they share.
 
 ```python
-from langgraph_xai import ObservabilityProvider, OpenTelemetryObservability
+from agxai import ObservabilityProvider, OpenTelemetryObservability
 
-xai.register(ObservabilityProvider, OpenTelemetryObservability(tracer_provider=provider))
+runtime.register(ObservabilityProvider, OpenTelemetryObservability(tracer_provider=provider))
 ```
 
 ## Adapters
 
-::: langgraph_xai.observability.langsmith.LangSmithObservability
+::: agxai.observability.langsmith.LangSmithObservability
 
-::: langgraph_xai.observability.langfuse.LangfuseObservability
+::: agxai.observability.langfuse.LangfuseObservability
 
-::: langgraph_xai.observability.otel.OpenTelemetryObservability
+::: agxai.observability.otel.OpenTelemetryObservability
 
-::: langgraph_xai.observability.noop.NoOpObservability
+::: agxai.observability.noop.NoOpObservability
 
 ## Building an adapter
 
-::: langgraph_xai.observability.base.ObservabilityAdapter
+::: agxai.observability.base.ObservabilityAdapter
 
-::: langgraph_xai.observability.base.correlation_fields
+::: agxai.observability.base.correlation_fields
 
-::: langgraph_xai.observability.base.event_payload
+::: agxai.observability.base.event_payload
 
-::: langgraph_xai.observability.langfuse.langfuse_trace_context
+::: agxai.observability.langfuse.langfuse_trace_context
 
 ## Errors
 
-::: langgraph_xai.observability.errors.ObservabilityAdapterError
+::: agxai.observability.errors.ObservabilityAdapterError
 
-::: langgraph_xai.observability.errors.AdapterClosedError
+::: agxai.observability.errors.AdapterClosedError
 
-::: langgraph_xai.observability.errors.OptionalDependencyError
+::: agxai.observability.errors.OptionalDependencyError

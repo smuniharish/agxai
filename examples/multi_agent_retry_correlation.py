@@ -18,7 +18,7 @@ from _shared import show
 from langchain_core.tools import tool
 from langgraph.graph import END, START, StateGraph
 
-from langgraph_xai import ProvenanceStore, StoreFilter, XAIRuntime
+from agxai import ProvenanceStore, StoreFilter, XAIRuntime
 
 attempts = {"count": 0}
 
@@ -57,15 +57,15 @@ async def main() -> None:
     builder.add_edge("researcher", "writer")
     builder.add_edge("writer", END)
 
-    xai = XAIRuntime(application_id="research", tenant_id="demo", graph_id="daily-brief")
-    with xai.collect_runs() as runs:
-        result = await xai.instrument(builder.compile()).ainvoke(
+    runtime = XAIRuntime(application_id="research", tenant_id="demo", graph_id="daily-brief")
+    with runtime.collect_runs() as runs:
+        result = await runtime.instrument(builder.compile()).ainvoke(
             {"symbol": "ACME"}, {"metadata": {"trace_id": "brief-2026-10-04"}}
         )
     (run,) = runs
     print(result["report"])
 
-    store = xai.registry.require(ProvenanceStore)
+    store = runtime.registry.require(ProvenanceStore)
     records = [
         record
         async for record in store.query(

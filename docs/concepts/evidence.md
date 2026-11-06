@@ -5,7 +5,7 @@ a retrieved passage, a tool result, a business rule. It is recorded explicitly,
 at the point where the information is used:
 
 ```python
-score = await xai.record_evidence(
+score = await runtime.record_evidence(
     EvidenceType.TOOL_RESULT,
     summary="Fraud detector scored the transaction 0.91 (high risk).",
     content_reference="fraud-detector://scores/txn-8841",
@@ -32,7 +32,7 @@ run. Elsewhere, pass `run=` explicitly.
 
 ## Recorded evidence
 
-From the [canonical model gallery](https://github.com/smuniharish/langgraph-xai/blob/master/examples/canonical_model_gallery.py)
+From the [canonical model gallery](https://github.com/smuniharish/agxai/blob/master/examples/canonical_model_gallery.py)
 (context omitted):
 
 ```json

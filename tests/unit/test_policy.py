@@ -12,9 +12,9 @@ from hypothesis import given
 from hypothesis import strategies as st
 from pydantic import BaseModel
 
-from langgraph_xai import PolicyAction
-from langgraph_xai.core import ExecutionStartedEvent, ExplanationContext
-from langgraph_xai.policy import (
+from agxai import PolicyAction
+from agxai.core import ExecutionStartedEvent, ExplanationContext
+from agxai.policy import (
     REDACTED,
     DefaultCapturePolicy,
     DefaultPolicyProvider,

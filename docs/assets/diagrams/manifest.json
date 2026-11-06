@@ -1,18 +1,18 @@
 {
-  "mermaidVersion": "12.0.0",
+  "mermaidVersion": "12.2.0",
   "renderOptions": {
     "scale": 2,
     "background": "white"
   },
   "configChecksum": "368285a037f89a1d8f942f9075a7fd19bdc3a15992cdd1290df4df5a7996fdf8",
   "sources": {
-    "architecture-overview.mmd": "a12e13c6c387b421ad35b1d3b48b8701e5fea26e4f4762eb35a30a547d7efe89",
+    "architecture-overview.mmd": "241c3efb42d8a9d3391bb1d59f6007cf0046e2f84fd9565de1ea6458775b11a8",
     "artifact-lineage.mmd": "b83c58efee690f388d836fff3418fb5ef68cc2e2cd08bd80d72ad7d7fa8b37b2",
     "capture-pipeline.mmd": "e56b8de051e2db0a085bda5a010ee0b73890f8f6b6d7687bb571c060cc9692bb",
     "explanation-flow.mmd": "41336948150b113b3ddf0b913747c403efe27215574020d12662c93e1d871b3a",
-    "extensibility.mmd": "43a459e7cd627fe64b61b4243075be0f275230234b8866d669ab844cf7361c91",
-    "langsmith-comparison.mmd": "b80f6e4e82b05ef39c810e8917606a7218c440e87fb4acb735c3ec6f0619d762",
-    "observability-boundary.mmd": "8e433f34ef00c2d8b6e45a4ebbe25572437f0fe466f1704c1413f2b8a5c145bf",
+    "extensibility.mmd": "5753b86b85c2b6a0afe67482ce29c78852b95f4f12275fbcfa2251af8d19d5a1",
+    "langsmith-comparison.mmd": "6436a91ba6ee45c734aa719d0975e4624e01edd7e96e205005f8e13b368ccf13",
+    "observability-boundary.mmd": "fc483ce406b89d61ff56d25933ad26f41026192bcba28d8d9686d855f070d0de",
     "provenance-flow.mmd": "7cb829e3839f26535cec331a3278c6000d068cb5b67c6f055d375146db69dd90",
     "runtime-flow.mmd": "4ac1b5148ba0e2dbab96d2a4236337c541ffbf5e5855b8e65a62f53668031b9a"
   }

@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from collections.abc import Mapping
 from datetime import UTC, datetime
 from typing import Any
@@ -8,7 +9,7 @@ from hypothesis import given
 from hypothesis import strategies as st
 from langgraph.types import Interrupt
 
-from langgraph_xai import (
+from agxai import (
     AttributionEngine,
     CaptureMode,
     CapturePolicy,
@@ -35,17 +36,17 @@ from langgraph_xai import (
     XAIInstrumentationError,
     XAIRuntime,
 )
-from langgraph_xai.core import (
+from agxai.core import (
     ExecutionFailedEvent,
     InterruptEvent,
     NodeExecutionEvent,
     StateTransitionEvent,
     ToolExecutionEvent,
 )
-from langgraph_xai.observability import NoOpObservability
-from langgraph_xai.policy import REDACTED
-from langgraph_xai.runtime import runtime as runtime_module
-from langgraph_xai.storage import InMemoryProvenanceStore
+from agxai.observability import NoOpObservability
+from agxai.policy import REDACTED
+from agxai.runtime import runtime as runtime_module
+from agxai.storage import InMemoryProvenanceStore
 from tests.helpers import (
     FailingStore,
     RecordingObservability,
@@ -57,7 +58,7 @@ from tests.helpers import (
 )
 
 
-def runtime(**config) -> XAIRuntime:
+def make_runtime(**config) -> XAIRuntime:
     return XAIRuntime(config=XAIConfig(**config), application_id="app", tenant_id="tenant")
 
 
@@ -65,11 +66,11 @@ def test_every_capability_has_a_working_default_unless_already_registered() -> N
     registry = Registry()
     store = registry.register(ProvenanceStore, InMemoryProvenanceStore())
 
-    xai = XAIRuntime(registry=registry)
+    runtime = XAIRuntime(registry=registry)
 
-    assert xai.registry.require(ProvenanceStore) is store
-    assert isinstance(xai.registry.require(ObservabilityProvider), NoOpObservability)
-    assert set(xai.registry.capabilities()) == {
+    assert runtime.registry.require(ProvenanceStore) is store
+    assert isinstance(runtime.registry.require(ObservabilityProvider), NoOpObservability)
+    assert set(runtime.registry.capabilities()) == {
         ProvenanceStore,
         ObservabilityProvider,
         AttributionEngine,
@@ -80,10 +81,10 @@ def test_every_capability_has_a_working_default_unless_already_registered() -> N
 
 
 def test_context_from_config_applies_overrides_and_sanitizes_metadata() -> None:
-    xai = runtime()
+    runtime = make_runtime()
     run_id = "4f8f6f1e-7a7b-4f2c-9f8a-0d6c2f1d9b11"
 
-    ctx = xai.context_from_config(
+    ctx = runtime.context_from_config(
         {
             "metadata": {
                 "xai_application_id": "other-app",
@@ -103,16 +104,16 @@ def test_context_from_config_applies_overrides_and_sanitizes_metadata() -> None:
     assert (ctx.thread_id, ctx.trace_id, ctx.checkpoint_id) == ("7", "trace-1", "cp-1")
     assert ctx.metadata == {"trace_id": "trace-1", "api_key": REDACTED, "team": "risk"}
     with pytest.raises(ValueError, match="xai_run_id"):
-        xai.context_from_config({"metadata": {"xai_run_id": "not-a-uuid"}})
+        runtime.context_from_config({"metadata": {"xai_run_id": "not-a-uuid"}})
 
 
 async def test_run_lifecycle_records_ordered_events_and_final_status() -> None:
-    xai = runtime()
-    run = await xai.start_run()
-    await xai.record_state_delta("node", {"a": 1}, {"a": 2}, run=run)
-    await xai.finish_run(run)
+    runtime = make_runtime()
+    run = await runtime.start_run()
+    await runtime.record_state_delta("node", {"a": 1}, {"a": 2}, run=run)
+    await runtime.finish_run(run)
 
-    records = await stored(xai, run_id=run.run_id)
+    records = await stored(runtime, run_id=run.run_id)
 
     assert run.execution.status is ExecutionStatus.COMPLETED
     assert [getattr(item, "event_type", "execution") for item in records] == [
@@ -136,38 +137,40 @@ async def test_run_lifecycle_records_ordered_events_and_final_status() -> None:
 async def test_failed_and_cancelled_runs_record_an_exception(
     error, cancelled, status, exception_type, message
 ) -> None:
-    xai = runtime()
-    run = await xai.start_run()
+    runtime = make_runtime()
+    run = await runtime.start_run()
 
-    await xai.finish_run(run, error, cancelled=cancelled)
+    await runtime.finish_run(run, error, cancelled=cancelled)
 
     assert run.execution.status is status
     assert run.execution.exceptions[0].exception_type == exception_type
     assert run.execution.exceptions[0].message == message
-    assert isinstance((await stored(xai, item_type=ExecutionFailedEvent))[0], ExecutionFailedEvent)
+    assert isinstance(
+        (await stored(runtime, item_type=ExecutionFailedEvent))[0], ExecutionFailedEvent
+    )
 
 
 async def test_interrupted_runs_record_one_interaction_per_interrupt() -> None:
-    xai = runtime()
-    run = await xai.start_run()
+    runtime = make_runtime()
+    run = await runtime.start_run()
     question = Interrupt(value={"question": "approve?", "password": "hunter2"}, id="interrupt-1")
 
-    await xai.finish_run(run, interrupts=[question, Interrupt(value="raw", id="interrupt-2")])
+    await runtime.finish_run(run, interrupts=[question, Interrupt(value="raw", id="interrupt-2")])
 
     first, second = run.execution.human_interactions
     assert run.execution.status is ExecutionStatus.INTERRUPTED
     assert (first.request_reference, second.request_reference) == ("interrupt-1", "interrupt-2")
     assert first.metadata == {"value": {"question": "approve?", "password": REDACTED}}
     assert second.metadata == {"value": "raw"}
-    assert len(await stored(xai, item_type=InterruptEvent)) == 2
+    assert len(await stored(runtime, item_type=InterruptEvent)) == 2
 
 
 async def test_static_breakpoints_record_the_pending_nodes() -> None:
-    xai = runtime()
-    paused, failed = await xai.start_run(), await xai.start_run()
+    runtime = make_runtime()
+    paused, failed = await runtime.start_run(), await runtime.start_run()
 
-    await xai.finish_run(paused, pending_nodes=["tools"])
-    await xai.finish_run(failed, ValueError("bad"), pending_nodes=["tools"])
+    await runtime.finish_run(paused, pending_nodes=["tools"])
+    await runtime.finish_run(failed, ValueError("bad"), pending_nodes=["tools"])
 
     (interaction,) = paused.execution.human_interactions
     assert paused.execution.status is ExecutionStatus.INTERRUPTED
@@ -178,12 +181,14 @@ async def test_static_breakpoints_record_the_pending_nodes() -> None:
 
 
 async def test_continuation_links_the_resumed_run_but_never_itself() -> None:
-    xai = runtime()
-    first = await xai.start_run()
+    runtime = make_runtime()
+    first = await runtime.start_run()
     own_id = str(first.run_id)
 
-    resumed = await xai.start_run(continuation_of=first.run_id)
-    rerun = await xai.start_run({"metadata": {"xai_run_id": own_id}}, continuation_of=first.run_id)
+    resumed = await runtime.start_run(continuation_of=first.run_id)
+    rerun = await runtime.start_run(
+        {"metadata": {"xai_run_id": own_id}}, continuation_of=first.run_id
+    )
 
     assert resumed.execution.continuation_of == first.run_id
     assert rerun.run_id == first.run_id
@@ -201,16 +206,16 @@ async def test_records_made_after_a_run_finishes_keep_the_stored_execution_curre
     store = CountingStore()
     registry = Registry()
     registry.register(ProvenanceStore, store)
-    xai = XAIRuntime(registry=registry)
-    run = await xai.start_run()
-    await xai.record_tool("search", run=run)
-    await xai.finish_run(run, interrupts=[Interrupt(value="approve?", id="i-1")])
+    runtime = XAIRuntime(registry=registry)
+    run = await runtime.start_run()
+    await runtime.record_tool("search", run=run)
+    await runtime.finish_run(run, interrupts=[Interrupt(value="approve?", id="i-1")])
 
     assert store.execution_writes == 2
-    approval = await xai.record_human_interaction("approval", actor_reference="lead", run=run)
+    approval = await runtime.record_human_interaction("approval", actor_reference="lead", run=run)
 
     assert store.execution_writes == 3
-    (saved,) = await executions(xai)
+    (saved,) = await executions(runtime)
     assert saved.status is ExecutionStatus.INTERRUPTED
     assert saved.human_interactions[-1] == approval
 
@@ -234,10 +239,10 @@ async def test_records_made_after_a_run_finishes_keep_the_stored_execution_curre
     ],
 )
 async def test_capture_modes_select_changes(mode, fields, expected) -> None:
-    xai = runtime(capture_state=mode, capture_fields=frozenset(fields))
-    run = await xai.start_run()
+    runtime = make_runtime(capture_state=mode, capture_fields=frozenset(fields))
+    run = await runtime.start_run()
 
-    transition = await xai.record_state_delta(
+    transition = await runtime.record_state_delta(
         "node",
         {"changed": 1, "same": "x", "removed": 3, "password": "a"},
         {"changed": 2, "same": "x", "password": "b", "added": "new"},
@@ -252,13 +257,13 @@ async def test_capture_modes_select_changes(mode, fields, expected) -> None:
 
 
 async def test_no_transition_is_recorded_when_nothing_is_selected() -> None:
-    xai = runtime()
-    run = await xai.start_run()
+    runtime = make_runtime()
+    run = await runtime.start_run()
 
-    assert await xai.record_state_delta("node", {"a": 1}, {"a": 1}, run=run) is None
-    assert await xai.record_state_delta("node", None, None, run=run) is None
-    assert await runtime(capture_state="none").record_state_delta("n", {}, {"a": 1}) is None
-    assert await xai.record_state_delta("node", {}, {"a": 1}) is None
+    assert await runtime.record_state_delta("node", {"a": 1}, {"a": 1}, run=run) is None
+    assert await runtime.record_state_delta("node", None, None, run=run) is None
+    assert await make_runtime(capture_state="none").record_state_delta("n", {}, {"a": 1}) is None
+    assert await runtime.record_state_delta("node", {}, {"a": 1}) is None
     assert run.execution.state_transitions == []
 
 
@@ -272,13 +277,13 @@ async def test_unequal_raw_values_with_equal_captures_are_not_changes() -> None:
         def __repr__(self) -> str:
             return "Opaque()"
 
-    xai = runtime()
-    run = await xai.start_run()
+    runtime = make_runtime()
+    run = await runtime.start_run()
 
-    nan_change = await xai.record_state_delta(
+    nan_change = await runtime.record_state_delta(
         "node", {"value": float("nan")}, {"value": float("nan")}, run=run
     )
-    opaque_change = await xai.record_state_delta(
+    opaque_change = await runtime.record_state_delta(
         "node", {"value": Opaque()}, {"value": Opaque()}, run=run
     )
 
@@ -290,12 +295,12 @@ async def test_custom_capture_uses_the_callable_and_honors_failure_modes() -> No
     with pytest.raises(ValueError, match="custom_state_capture"):
         XAIRuntime(config=XAIConfig(capture_state=CaptureMode.CUSTOM))
 
-    xai = XAIRuntime(
+    runtime = XAIRuntime(
         config=XAIConfig(capture_state=CaptureMode.CUSTOM),
         custom_state_capture=lambda before, after: {"score": after["score"]},
     )
-    run = await xai.start_run()
-    transition = await xai.record_state_delta(
+    run = await runtime.start_run()
+    transition = await runtime.record_state_delta(
         "n", {"score": 1, "ssn": "x"}, {"score": 2, "ssn": "y"}, run=run
     )
     assert transition is not None
@@ -326,11 +331,11 @@ async def test_custom_capture_uses_the_callable_and_honors_failure_modes() -> No
 
 async def test_recording_apis_build_canonical_artifacts() -> None:
     plugin = RecordingPlugin()
-    xai = XAIRuntime(plugins=(plugin,))
-    run = await xai.start_run()
+    runtime = XAIRuntime(plugins=(plugin,))
+    run = await runtime.start_run()
     started = datetime.now(UTC)
 
-    evidence = await xai.record_evidence(
+    evidence = await runtime.record_evidence(
         "tool_result",
         summary="score",
         content_reference="fraud://1",
@@ -340,7 +345,7 @@ async def test_recording_apis_build_canonical_artifacts() -> None:
         metadata={"token": "t"},
         run=run,
     )
-    decision = await xai.record_decision(
+    decision = await runtime.record_decision(
         "HUMAN_REVIEW",
         decision_type="routing",
         candidate_actions=["AUTO", "HUMAN_REVIEW"],
@@ -352,16 +357,16 @@ async def test_recording_apis_build_canonical_artifacts() -> None:
         uncertainty=0.1,
         run=run,
     )
-    tool = await xai.record_tool("search", status=ToolStatus.TIMED_OUT, latency_ms=3, run=run)
-    retrieval = await xai.record_retrieval(
+    tool = await runtime.record_tool("search", status=ToolStatus.TIMED_OUT, latency_ms=3, run=run)
+    retrieval = await runtime.record_retrieval(
         "docs", documents=[RetrievedDocument(document_id="d1")], reranker="bm25", run=run
     )
-    memory = await xai.record_memory("m1", MemoryOperation.READ, namespace="users", run=run)
-    link = await xai.record_provenance("raw", evidence.id, "DERIVED_FROM", run=run)
-    node = await xai.record_node(
+    memory = await runtime.record_memory("m1", MemoryOperation.READ, namespace="users", run=run)
+    link = await runtime.record_provenance("raw", evidence.id, "DERIVED_FROM", run=run)
+    node = await runtime.record_node(
         "node", status=ExecutionStatus.COMPLETED, started_at=started, attempt=2, run=run
     )
-    interaction = await xai.record_human_interaction(
+    interaction = await runtime.record_human_interaction(
         "approval", actor_reference="reviewer-1", run=run
     )
 
@@ -379,22 +384,23 @@ async def test_recording_apis_build_canonical_artifacts() -> None:
     assert node.ended_at is not None
     assert node.attempt == 2
     assert run.execution.human_interactions == [interaction]
-    assert await xai.registry.require(ProvenanceStore).get(str(link.id)) == link
-    assert len(await stored(xai, item_type=NodeExecutionEvent)) == 1
+    store = runtime.registry.require(ProvenanceStore)
+    assert await store.get(str(link.id), context=link.context) == link
+    assert len(await stored(runtime, item_type=NodeExecutionEvent)) == 1
 
 
 async def test_nested_values_supplied_by_the_caller_are_redacted() -> None:
-    xai = runtime()
-    run = await xai.start_run()
+    runtime = make_runtime()
+    run = await runtime.start_run()
 
-    evidence = await xai.record_evidence(
+    evidence = await runtime.record_evidence(
         "tool_result",
         source=SourceReference(
             source_id="crm", source_type="api", metadata={"authorization": "Bearer x"}
         ),
         run=run,
     )
-    decision = await xai.record_decision(
+    decision = await runtime.record_decision(
         "ESCALATE",
         factors=[
             DecisionFactor(name="api_key", value="sk-live"),
@@ -402,7 +408,7 @@ async def test_nested_values_supplied_by_the_caller_are_redacted() -> None:
         ],
         run=run,
     )
-    retrieval = await xai.record_retrieval(
+    retrieval = await runtime.record_retrieval(
         "kb",
         documents=[RetrievedDocument(document_id="d1", metadata={"cookie": "c", "lang": "en"})],
         run=run,
@@ -418,23 +424,25 @@ async def test_nested_values_supplied_by_the_caller_are_redacted() -> None:
 
 
 async def test_recording_requires_a_run() -> None:
-    xai = runtime()
+    runtime = make_runtime()
 
     with pytest.raises(RuntimeError, match="no active run"):
-        await xai.record_evidence("rule")
+        await runtime.record_evidence("rule")
     with pytest.raises(RuntimeError, match="no active run"):
-        await xai.record_node("n", status=ExecutionStatus.COMPLETED, started_at=datetime.now(UTC))
+        await runtime.record_node(
+            "n", status=ExecutionStatus.COMPLETED, started_at=datetime.now(UTC)
+        )
 
 
 async def test_record_artifact_validates_the_run() -> None:
-    xai = runtime()
-    run = await xai.start_run()
+    runtime = make_runtime()
+    run = await runtime.start_run()
     own = Evidence(evidence_type="rule", context=run.execution.context)
     foreign = Evidence(evidence_type="rule", context=execution().context)
 
-    assert await xai.record_artifact(own, run=run) is own
+    assert await runtime.record_artifact(own, run=run) is own
     with pytest.raises(ValueError, match="does not match"):
-        await xai.record_artifact(foreign, run=run)
+        await runtime.record_artifact(foreign, run=run)
 
 
 async def test_capture_policy_can_drop_events() -> None:
@@ -447,18 +455,18 @@ async def test_capture_policy_can_drop_events() -> None:
                 allowed=not isinstance(event, StateTransitionEvent),
             )
 
-    xai = runtime()
+    runtime = make_runtime()
     observer = RecordingObservability()
-    xai.register(CapturePolicy, DenyTransitions())
-    xai.register(ObservabilityProvider, observer)
-    run = await xai.start_run()
+    runtime.register(CapturePolicy, DenyTransitions())
+    runtime.register(ObservabilityProvider, observer)
+    run = await runtime.start_run()
 
-    assert await xai.record_state_delta("n", {"a": 1}, {"a": 2}, run=run) is not None
-    await xai.finish_run(run)
+    assert await runtime.record_state_delta("n", {"a": 1}, {"a": 2}, run=run) is not None
+    await runtime.finish_run(run)
 
     assert run.execution.state_transitions == []
-    assert (await executions(xai))[0].state_transitions == []
-    assert await stored(xai, item_type=StateTransitionEvent) == []
+    assert (await executions(runtime))[0].state_transitions == []
+    assert await stored(runtime, item_type=StateTransitionEvent) == []
     assert [event.event_type for event in observer.events] == [
         "execution.started",
         "execution.completed",
@@ -470,69 +478,94 @@ async def test_events_whose_capture_policy_fails_are_not_captured() -> None:
         async def evaluate(self, event) -> PolicyDecision:
             raise RuntimeError("policy backend unavailable")
 
-    xai = runtime()
-    xai.register(CapturePolicy, BrokenPolicy())
-    run = await xai.start_run()
+    runtime = make_runtime()
+    runtime.register(CapturePolicy, BrokenPolicy())
+    run = await runtime.start_run()
 
-    await xai.record_tool("search", run=run)
+    await runtime.record_tool("search", run=run)
 
     assert run.execution.tools == []
-    assert await stored(xai, item_type=ToolExecutionEvent) == []
-    assert all(isinstance(error, RuntimeError) for error in xai.errors)
+    assert await stored(runtime, item_type=ToolExecutionEvent) == []
+    assert all(isinstance(error, RuntimeError) for error in runtime.errors)
 
 
-async def test_fail_open_records_errors_without_interrupting() -> None:
-    xai = runtime()
-    xai.register(ProvenanceStore, FailingStore())
+async def test_fail_open_records_errors_without_interrupting(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    runtime = make_runtime()
+    runtime.register(ProvenanceStore, FailingStore())
 
-    run = await xai.start_run()
-    await xai.finish_run(run)
+    with caplog.at_level(logging.WARNING, logger="agxai"):
+        run = await runtime.start_run()
+        await runtime.finish_run(run)
 
     assert run.execution.status is ExecutionStatus.COMPLETED
-    assert len(xai.errors) == 4
-    assert all(isinstance(error, OSError) for error in xai.errors)
+    assert len(runtime.errors) == 4
+    assert all(isinstance(error, OSError) for error in runtime.errors)
+    failures = [record for record in caplog.records if record.name == "agxai.runtime.runtime"]
+    assert len(failures) == 4
+    assert all(record.levelno == logging.WARNING for record in failures)
+    assert all(record.exc_info and record.exc_info[0] is OSError for record in failures)
+    assert "fail-open" in failures[0].getMessage()
+
+
+async def test_fail_closed_raises_without_also_logging(caplog: pytest.LogCaptureFixture) -> None:
+    runtime = make_runtime(failure_mode=FailureMode.FAIL_CLOSED)
+    runtime.register(ProvenanceStore, FailingStore())
+
+    with caplog.at_level(logging.DEBUG, logger="agxai"), pytest.raises(XAIInstrumentationError):
+        await runtime.start_run()
+
+    assert len(runtime.errors) == 1
+    assert [record for record in caplog.records if record.name.startswith("agxai")] == []
+
+
+def test_the_package_logger_has_a_null_handler() -> None:
+    assert any(
+        isinstance(handler, logging.NullHandler) for handler in logging.getLogger("agxai").handlers
+    )
 
 
 async def test_error_history_is_bounded() -> None:
-    xai = runtime()
-    xai.register(ProvenanceStore, FailingStore())
-    run = await xai.start_run()
+    runtime = make_runtime()
+    runtime.register(ProvenanceStore, FailingStore())
+    run = await runtime.start_run()
 
     for _ in range(120):
-        await xai.record_provenance("a", "b", "r", run=run)
+        await runtime.record_provenance("a", "b", "r", run=run)
 
-    assert len(xai.errors) == 100
+    assert len(runtime.errors) == 100
 
 
 async def test_fail_closed_raises_with_the_cause() -> None:
-    xai = runtime(failure_mode="fail_closed")
-    xai.register(ProvenanceStore, FailingStore(ConnectionError("db down")))
+    runtime = make_runtime(failure_mode="fail_closed")
+    runtime.register(ProvenanceStore, FailingStore(ConnectionError("db down")))
 
     with pytest.raises(XAIInstrumentationError, match="ConnectionError: db down") as raised:
-        await xai.start_run()
+        await runtime.start_run()
 
     assert isinstance(raised.value.__cause__, ConnectionError)
-    assert xai.errors == (raised.value.__cause__,)
+    assert runtime.errors == (raised.value.__cause__,)
 
 
 async def test_strict_mode_requires_sinks_and_plugins() -> None:
-    xai = runtime(failure_mode="strict")
-    run = await xai.start_run()
+    runtime = make_runtime(failure_mode="strict")
+    run = await runtime.start_run()
 
     with pytest.raises(XAIInstrumentationError, match="plugin"):
-        await xai.record_evidence("rule", run=run)
+        await runtime.record_evidence("rule", run=run)
     assert run.artifacts == []
 
-    xai.plugins.add(RecordingPlugin())
-    assert await xai.record_evidence("rule", run=run)
+    runtime.plugins.add(RecordingPlugin())
+    assert await runtime.record_evidence("rule", run=run)
 
-    xai.registry.remove(ProvenanceStore)
-    await xai.record_provenance("a", "b", "r", run=run)
-    xai.registry.remove(ObservabilityProvider)
+    runtime.registry.remove(ProvenanceStore)
+    await runtime.record_provenance("a", "b", "r", run=run)
+    runtime.registry.remove(ObservabilityProvider)
     with pytest.raises(XAIInstrumentationError, match="sink"):
-        await xai.record_provenance("a", "b", "r", run=run)
+        await runtime.record_provenance("a", "b", "r", run=run)
 
-    lenient = runtime()
+    lenient = make_runtime()
     lenient.registry.remove(ProvenanceStore)
     lenient.registry.remove(ObservabilityProvider)
     lenient.registry.remove(CapturePolicy)
@@ -540,9 +573,9 @@ async def test_strict_mode_requires_sinks_and_plugins() -> None:
 
 
 async def test_explain_assembles_attribution_policy_and_engine_output() -> None:
-    xai = runtime()
+    runtime = make_runtime()
 
-    explanation = await xai.explain(explanation_context(audience="auditor"))
+    explanation = await runtime.explain(explanation_context(audience="auditor"))
 
     assert explanation.audience == "auditor"
     assert explanation.summary == "The routing decision selected 'HUMAN_REVIEW'."
@@ -551,7 +584,7 @@ async def test_explain_assembles_attribution_policy_and_engine_output() -> None:
 
 
 async def test_explain_reuses_supplied_attribution() -> None:
-    xai = runtime()
+    runtime = make_runtime()
     calls: list[str] = []
 
     class CountingAttribution:
@@ -559,17 +592,17 @@ async def test_explain_reuses_supplied_attribution() -> None:
             calls.append("attribute")
             raise AssertionError("must not be called")
 
-    xai.register(AttributionEngine, CountingAttribution())
+    runtime.register(AttributionEngine, CountingAttribution())
     context_ = explanation_context()
     attribution = await XAIRuntime().attribute(context_)
 
-    await xai.explain(context_.model_copy(update={"attribution": attribution}))
+    await runtime.explain(context_.model_copy(update={"attribution": attribution}))
 
     assert calls == []
 
 
 async def test_llm_gate_fails_fast_before_any_policy_or_model_work() -> None:
-    xai = runtime()
+    runtime = make_runtime()
     evaluated: list[str] = []
 
     class RecordingPolicy:
@@ -577,17 +610,17 @@ async def test_llm_gate_fails_fast_before_any_policy_or_model_work() -> None:
             evaluated.append(action)
             raise AssertionError("must not be called")
 
-    xai.register(PolicyProvider, RecordingPolicy())
-    xai.register(ExplanationEngine, LLMExplanationEngine(enabled=True))
+    runtime.register(PolicyProvider, RecordingPolicy())
+    runtime.register(ExplanationEngine, LLMExplanationEngine(enabled=True))
 
     with pytest.raises(XAIInstrumentationError, match="disabled in XAIConfig"):
-        await xai.explain(explanation_context())
+        await runtime.explain(explanation_context())
     assert evaluated == []
 
 
 @pytest.mark.parametrize("failing", ["policy", "attribution", "engine"])
 async def test_explain_never_returns_an_unfiltered_or_partial_explanation(failing: str) -> None:
-    xai = runtime()
+    runtime = make_runtime()
 
     class Broken:
         requires_llm = False
@@ -606,28 +639,28 @@ async def test_explain_never_returns_an_unfiltered_or_partial_explanation(failin
         "attribution": AttributionEngine,
         "engine": ExplanationEngine,
     }[failing]
-    xai.register(capability, Broken())
+    runtime.register(capability, Broken())
 
     with pytest.raises(XAIInstrumentationError, match=r"see XAIRuntime\.errors"):
-        await xai.explain(explanation_context())
-    assert isinstance(xai.errors[-1], ConnectionError)
+        await runtime.explain(explanation_context())
+    assert isinstance(runtime.errors[-1], ConnectionError)
 
 
 async def test_explain_decision_uses_the_run_and_its_referenced_evidence() -> None:
-    xai = runtime()
-    run = await xai.start_run()
-    used = await xai.record_evidence("tool_result", summary="used", run=run)
-    await xai.record_evidence("tool_result", summary="unrelated", run=run)
-    decision = await xai.record_decision(
+    runtime = make_runtime()
+    run = await runtime.start_run()
+    used = await runtime.record_evidence("tool_result", summary="used", run=run)
+    await runtime.record_evidence("tool_result", summary="unrelated", run=run)
+    decision = await runtime.record_decision(
         "APPROVE",
         decision_type="approval",
         factors=[DecisionFactor(name="score", value=1, evidence_ids=[used.id])],
         run=run,
     )
-    unreferenced = await xai.record_decision("ESCALATE", run=run)
+    unreferenced = await runtime.record_decision("ESCALATE", run=run)
 
-    explanation = await xai.explain_decision(decision, audience="end_user", run=run)
-    fallback = await xai.explain_decision(unreferenced, run=run)
+    explanation = await runtime.explain_decision(decision, audience="end_user", run=run)
+    fallback = await runtime.explain_decision(unreferenced, run=run)
 
     assert explanation.audience == "end_user"
     assert explanation.summary == "The approval decision selected 'APPROVE'."
@@ -637,21 +670,21 @@ async def test_explain_decision_uses_the_run_and_its_referenced_evidence() -> No
     ]
     assert len([c for c in fallback.contributing_factors if c.factor_type == "tool_result"]) == 2
 
-    other = await xai.start_run()
+    other = await runtime.start_run()
     with pytest.raises(ValueError, match="does not belong"):
-        await xai.explain_decision(decision, run=other)
+        await runtime.explain_decision(decision, run=other)
 
 
 async def test_collect_runs_follows_the_context() -> None:
-    xai, other = runtime(), runtime()
+    runtime, other = make_runtime(), make_runtime()
 
-    with xai.collect_runs() as outer:
-        first = await xai.start_run()
-        with xai.collect_runs() as inner:
-            nested = await xai.start_run()
-        spawned = await asyncio.gather(xai.start_run(), xai.start_run())
+    with runtime.collect_runs() as outer:
+        first = await runtime.start_run()
+        with runtime.collect_runs() as inner:
+            nested = await runtime.start_run()
+        spawned = await asyncio.gather(runtime.start_run(), runtime.start_run())
         await other.start_run()
-    after = await xai.start_run()
+    after = await runtime.start_run()
 
     assert inner == [nested]
     assert outer == [first, *spawned]
@@ -661,55 +694,55 @@ async def test_collect_runs_follows_the_context() -> None:
 async def test_close_is_idempotent_attempts_every_step_and_rejects_new_runs() -> None:
     observer = RecordingObservability(fail=True)
     plugin = RecordingPlugin(fail=True)
-    xai = XAIRuntime(config=XAIConfig(failure_mode="fail_closed"), plugins=(plugin,))
-    xai.register(ObservabilityProvider, observer)
+    runtime = XAIRuntime(config=XAIConfig(failure_mode="fail_closed"), plugins=(plugin,))
+    runtime.register(ObservabilityProvider, observer)
 
     with pytest.raises(XAIInstrumentationError, match="ConnectionError"):
-        await xai.close()
-    await xai.close()
+        await runtime.close()
+    await runtime.close()
 
     assert (observer.flushed, observer.closed) == (1, 1)
     assert plugin.log == ["plugin.flush", "plugin.close"]
-    assert len(xai.errors) == 4
+    assert len(runtime.errors) == 4
     with pytest.raises(RuntimeError, match="closed"):
-        await xai.start_run()
+        await runtime.start_run()
 
 
 async def test_flush_reaches_observability_and_plugins() -> None:
     observer, plugin = RecordingObservability(), RecordingPlugin()
-    xai = XAIRuntime(plugins=(plugin,))
-    xai.register(ObservabilityProvider, observer)
+    runtime = XAIRuntime(plugins=(plugin,))
+    runtime.register(ObservabilityProvider, observer)
 
-    await xai.flush()
-    await xai.close()
+    await runtime.flush()
+    await runtime.close()
 
     assert observer.flushed == 2
     assert observer.closed == 1
     assert plugin.log == ["plugin.flush", "plugin.flush", "plugin.close"]
-    assert xai.errors == ()
+    assert runtime.errors == ()
 
 
 async def test_lifecycle_calls_skip_unregistered_capabilities() -> None:
-    xai = runtime()
-    xai.registry.remove(ObservabilityProvider)
-    xai.registry.remove(ProvenanceStore)
+    runtime = make_runtime()
+    runtime.registry.remove(ObservabilityProvider)
+    runtime.registry.remove(ProvenanceStore)
 
-    await xai.flush()
-    await xai.close()
+    await runtime.flush()
+    await runtime.close()
 
-    assert xai.errors == ()
+    assert runtime.errors == ()
 
 
 async def test_slow_operations_time_out_and_concurrency_is_bounded() -> None:
     observer = RecordingObservability(delay=0.2)
-    xai = runtime(operation_timeout_seconds=0.05)
-    xai.register(ObservabilityProvider, observer)
+    runtime = make_runtime(operation_timeout_seconds=0.05)
+    runtime.register(ObservabilityProvider, observer)
 
-    await xai.start_run()
+    await runtime.start_run()
 
-    assert isinstance(xai.errors[-1], TimeoutError)
+    assert isinstance(runtime.errors[-1], TimeoutError)
 
-    bounded = runtime(max_concurrency=1, operation_timeout_seconds=0.05)
+    bounded = make_runtime(max_concurrency=1, operation_timeout_seconds=0.05)
     await bounded._slots.acquire()
     try:
         await bounded.record_provenance("a", "b", "r", run=detached_run(bounded))
@@ -719,8 +752,8 @@ async def test_slow_operations_time_out_and_concurrency_is_bounded() -> None:
     assert bounded._slots._free == 1
 
 
-def detached_run(xai: XAIRuntime) -> Run:
-    return Run(execution(xai.context_from_config()))
+def detached_run(runtime: XAIRuntime) -> Run:
+    return Run(execution(runtime.context_from_config()))
 
 
 async def test_cancellation_is_never_swallowed() -> None:
@@ -728,16 +761,16 @@ async def test_cancellation_is_never_swallowed() -> None:
         async def emit(self, event) -> None:
             await asyncio.sleep(10)
 
-    xai = runtime()
-    xai.register(ObservabilityProvider, Hanging())
-    task = asyncio.ensure_future(xai.start_run())
+    runtime = make_runtime()
+    runtime.register(ObservabilityProvider, Hanging())
+    task = asyncio.ensure_future(runtime.start_run())
     await asyncio.sleep(0.05)
     task.cancel()
 
     with pytest.raises(asyncio.CancelledError):
         await task
-    assert xai.errors == ()
-    assert xai._slots._free == xai.config.max_concurrency
+    assert runtime.errors == ()
+    assert runtime._slots._free == runtime.config.max_concurrency
 
 
 async def test_slot_waiters_are_woken_in_order_as_soon_as_a_slot_frees() -> None:
@@ -827,11 +860,11 @@ async def test_waiters_on_closed_loops_are_skipped() -> None:
     update=st.dictionaries(st.sampled_from("abcdef"), st.integers(0, 3), max_size=6),
 )
 async def test_delta_capture_records_exactly_the_changed_keys(before, update) -> None:
-    xai = runtime()
-    run = await xai.start_run()
+    runtime = make_runtime()
+    run = await runtime.start_run()
     after = {**before, **update}
 
-    transition = await xai.record_state_delta("node", before, after, run=run)
+    transition = await runtime.record_state_delta("node", before, after, run=run)
 
     changed = {key for key in after if before.get(key) != after[key]}
     recorded = set() if transition is None else {change.path for change in transition.changes}
@@ -855,19 +888,21 @@ def test_node_execution_requires_aware_times() -> None:
 async def test_event_sequences_stay_contiguous_under_concurrent_recording(
     async_records: int, thread_records: int
 ) -> None:
-    xai = runtime()
-    run = await xai.start_run()
+    runtime = make_runtime()
+    run = await runtime.start_run()
 
     def record_in_thread(index: int) -> None:
-        xai.run_sync(xai.record_tool(f"thread-{index}", run=run))
+        runtime.run_sync(runtime.record_tool(f"thread-{index}", run=run))
 
     await asyncio.gather(
-        *(xai.record_tool(f"task-{index}", run=run) for index in range(async_records)),
+        *(runtime.record_tool(f"task-{index}", run=run) for index in range(async_records)),
         *(asyncio.to_thread(record_in_thread, index) for index in range(thread_records)),
     )
-    await xai.finish_run(run)
+    await runtime.finish_run(run)
 
-    events = [item for item in await stored(xai, run_id=run.run_id) if hasattr(item, "sequence")]
+    events = [
+        item for item in await stored(runtime, run_id=run.run_id) if hasattr(item, "sequence")
+    ]
     assert sorted(event.sequence for event in events) == list(
         range(2 + async_records + thread_records)
     )
@@ -879,11 +914,11 @@ states = st.dictionaries(keys, st.integers(0, 3), max_size=5)
 
 @given(before=states, update=states, fields=st.frozensets(keys, max_size=5))
 async def test_selective_capture_records_only_changed_named_fields(before, update, fields) -> None:
-    xai = runtime(capture_state=CaptureMode.SELECTIVE, capture_fields=fields)
-    run = await xai.start_run()
+    runtime = make_runtime(capture_state=CaptureMode.SELECTIVE, capture_fields=fields)
+    run = await runtime.start_run()
     after = {**before, **update}
 
-    transition = await xai.record_state_delta("node", before, after, run=run)
+    transition = await runtime.record_state_delta("node", before, after, run=run)
 
     expected = {
         key for key in after if key in fields and key != "token" and before.get(key) != after[key]
@@ -899,12 +934,12 @@ async def test_custom_capture_records_what_the_selector_returns_when_it_changed(
     def select(old: Mapping[str, Any], new: Mapping[str, Any]) -> dict[str, Any]:
         return {key: new.get(key, -1) for key in chosen}
 
-    xai = XAIRuntime(
+    runtime = XAIRuntime(
         config=XAIConfig(capture_state=CaptureMode.CUSTOM), custom_state_capture=select
     )
-    run = await xai.start_run()
+    run = await runtime.start_run()
 
-    transition = await xai.record_state_delta("node", before, after, run=run)
+    transition = await runtime.record_state_delta("node", before, after, run=run)
 
     selected = select(before, after)
     expected = {

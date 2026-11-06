@@ -5,7 +5,7 @@ tool call the model requested through LangGraph's `ToolNode`, and decides on a
 refund. Retrievals and tool calls are captured without any explainability code.
 The deciding node turns them into evidence. Model output is simulated, so the
 example runs offline. Source:
-[`examples/retrieval_and_tools.py`](https://github.com/smuniharish/langgraph-xai/blob/master/examples/retrieval_and_tools.py).
+[`examples/retrieval_and_tools.py`](https://github.com/smuniharish/agxai/blob/master/examples/retrieval_and_tools.py).
 
 ```bash
 uv run python examples/retrieval_and_tools.py
@@ -31,16 +31,16 @@ latency, are recorded in the run.
 
 ## Captured facts become evidence
 
-The `decide` node reads what was captured from `xai.current_run` and records it
+The `decide` node reads what was captured from `runtime.current_run` and records it
 as evidence for the decision:
 
 ```python
 async def decide(state: Support) -> Support:
-    run = xai.current_run
+    run = runtime.current_run
     assert run is not None
     (retrieval,) = run.execution.retrievals
     evidence = [
-        await xai.record_evidence(
+        await runtime.record_evidence(
             EvidenceType.RETRIEVAL_DOCUMENT,
             summary=f"Policy passage {document.document_id} (rank {document.rank}).",
             content_reference=document.content_reference,
@@ -50,13 +50,13 @@ async def decide(state: Support) -> Support:
         for document in retrieval.documents
     ]
     (lookup,) = run.execution.tools
-    delivery = await xai.record_evidence(
+    delivery = await runtime.record_evidence(
         EvidenceType.TOOL_RESULT,
         summary="Order A-1042 was delivered 12 days ago.",
         content_reference=f"tool-call://{lookup.tool_call_id}",
         confidence=1.0,
     )
-    await xai.record_decision(
+    await runtime.record_decision(
         "APPROVE_REFUND",
         decision_type=DecisionType.APPROVAL,
         candidate_actions=["APPROVE_REFUND", "DENY_REFUND", "ESCALATE"],

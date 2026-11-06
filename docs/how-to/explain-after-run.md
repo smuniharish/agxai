@@ -10,11 +10,11 @@ guide shows three ways to get from a finished call to an explanation.
 Each run holds its `Execution`, evidence, and decisions.
 
 ```python
-with xai.collect_runs() as runs:
+with runtime.collect_runs() as runs:
     result = await graph.ainvoke({"amount": 9200.0})
 (run,) = runs
 
-explanation = await xai.explain_decision(run.decisions[-1], audience=Audience.AUDITOR, run=run)
+explanation = await runtime.explain_decision(run.decisions[-1], audience=Audience.AUDITOR, run=run)
 ```
 
 Collection follows the async context:
@@ -27,7 +27,7 @@ Collection follows the async context:
 A batch call collects one run per input:
 
 ```python
-with xai.collect_runs() as runs:
+with runtime.collect_runs() as runs:
     results = await graph.abatch([{"amount": 120.0}, {"amount": 9200.0}])
 assert len(runs) == 2
 ```
@@ -39,12 +39,12 @@ job or a rules engine, can still record evidence and decisions. Start and
 finish the run yourself, and pass it explicitly:
 
 ```python
-run = await xai.start_run({"metadata": {"trace_id": "job-42"}})
-score = await xai.record_evidence(EvidenceType.TOOL_RESULT, summary="Score 0.91.", run=run)
-decision = await xai.record_decision("HUMAN_REVIEW", evidence_ids=[score.id], run=run)
-await xai.finish_run(run)
+run = await runtime.start_run({"metadata": {"trace_id": "job-42"}})
+score = await runtime.record_evidence(EvidenceType.TOOL_RESULT, summary="Score 0.91.", run=run)
+decision = await runtime.record_decision("HUMAN_REVIEW", evidence_ids=[score.id], run=run)
+await runtime.finish_run(run)
 
-explanation = await xai.explain_decision(decision, run=run)
+explanation = await runtime.explain_decision(decision, run=run)
 ```
 
 Do not combine this with an instrumented call for the same work. The
@@ -81,12 +81,12 @@ class Archive:
 
 
 archive = Archive()
-xai = XAIRuntime(application_id="payments", tenant_id="acme-bank", plugins=(archive,))
+runtime = XAIRuntime(application_id="payments", tenant_id="acme-bank", plugins=(archive,))
 ```
 
 ```python
 async def explain_later(run_id) -> None:
-    store = xai.registry.require(ProvenanceStore)
+    store = runtime.registry.require(ProvenanceStore)
     query = StoreFilter(
         application_id="payments", tenant_id="acme-bank", run_id=run_id, item_type=Execution
     )
@@ -97,7 +97,7 @@ async def explain_later(run_id) -> None:
         if isinstance(item, Decision) and item.context.run_id == execution.context.run_id
     )
     evidence = [archive.artifacts[evidence_id] for evidence_id in decision.evidence_ids]
-    explanation = await xai.explain(
+    explanation = await runtime.explain(
         ExplanationContext(
             execution=execution, decision=decision, evidence=evidence, audience=Audience.AUDITOR
         )

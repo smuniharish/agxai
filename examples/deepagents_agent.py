@@ -20,7 +20,7 @@ from _shared import chat_model, show
 from deepagents import create_deep_agent
 from langchain_core.tools import tool
 
-from langgraph_xai import XAIRuntime
+from agxai import XAIRuntime
 
 
 @tool
@@ -30,7 +30,7 @@ def word_count(text: str) -> int:
 
 
 async def main() -> None:
-    xai = XAIRuntime(graph_id="deep-research")
+    runtime = XAIRuntime(graph_id="deep-research")
     question = "Count the words in: explainability makes agents accountable."
     async with chat_model() as model:
         agent = create_deep_agent(
@@ -41,8 +41,8 @@ async def main() -> None:
                 "you are given, then report the count."
             ),
         )
-        with xai.collect_runs() as runs:
-            result = await xai.instrument(agent).ainvoke(
+        with runtime.collect_runs() as runs:
+            result = await runtime.instrument(agent).ainvoke(
                 {"messages": [{"role": "user", "content": question}]}
             )
     (run,) = runs

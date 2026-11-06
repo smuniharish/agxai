@@ -5,11 +5,11 @@ and anything passed to `record_artifact`) as it is created. See
 [Extensibility](../architecture/plugins.md#plugins) for an example.
 
 ```python
-from langgraph_xai import XAIRuntime
+from agxai import XAIRuntime
 
-xai = XAIRuntime(plugins=(MyArchive(),))
+runtime = XAIRuntime(plugins=(MyArchive(),))
 ```
 
-::: langgraph_xai.plugins.base.XAIPlugin
+::: agxai.plugins.base.XAIPlugin
 
-::: langgraph_xai.plugins.manager.PluginManager
+::: agxai.plugins.manager.PluginManager

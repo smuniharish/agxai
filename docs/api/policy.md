@@ -5,7 +5,7 @@ every free-form value. See [Policies](../concepts/policies.md) for how they fit
 together and how to write your own.
 
 ```python
-from langgraph_xai.policy import REDACTED, is_sensitive_key, sanitize_value
+from agxai.policy import REDACTED, is_sensitive_key, sanitize_value
 
 assert is_sensitive_key("x-api-key")
 assert sanitize_value({"Authorization": "Bearer abc"}) == {"Authorization": REDACTED}
@@ -13,16 +13,16 @@ assert sanitize_value({"Authorization": "Bearer abc"}) == {"Authorization": REDA
 
 ## Default policies
 
-::: langgraph_xai.policy.defaults.DefaultCapturePolicy
+::: agxai.policy.defaults.DefaultCapturePolicy
 
-::: langgraph_xai.policy.defaults.DefaultPolicyProvider
+::: agxai.policy.defaults.DefaultPolicyProvider
 
 ## Redaction
 
-::: langgraph_xai.policy.defaults.sanitize_value
+::: agxai.policy.defaults.sanitize_value
 
-::: langgraph_xai.policy.defaults.sanitize_mapping
+::: agxai.policy.defaults.sanitize_mapping
 
-::: langgraph_xai.policy.defaults.is_sensitive_key
+::: agxai.policy.defaults.is_sensitive_key
 
-::: langgraph_xai.policy.defaults.REDACTED
+::: agxai.policy.defaults.REDACTED

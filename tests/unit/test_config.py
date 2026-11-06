@@ -1,7 +1,7 @@
 import pytest
 from pydantic import ValidationError
 
-from langgraph_xai import CaptureMode, FailureMode, XAIConfig
+from agxai import CaptureMode, FailureMode, XAIConfig
 
 
 def test_defaults() -> None:

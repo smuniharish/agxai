@@ -13,30 +13,30 @@ score anywhere in the serialized explanation:
 ```python
 import pytest
 
-from langgraph_xai import Audience, DecisionFactor, PolicyProvider, XAIRuntime
+from agxai import Audience, DecisionFactor, PolicyProvider, XAIRuntime
 
 
 @pytest.fixture
 async def recorded():
-    xai = XAIRuntime()
-    xai.register(PolicyProvider, CustomerSafePolicy())
-    run = await xai.start_run()
-    score = await xai.record_evidence("tool_result", summary="Fraud score 0.91.", run=run)
-    decision = await xai.record_decision(
+    runtime = XAIRuntime()
+    runtime.register(PolicyProvider, CustomerSafePolicy())
+    run = await runtime.start_run()
+    score = await runtime.record_evidence("tool_result", summary="Fraud score 0.91.", run=run)
+    decision = await runtime.record_decision(
         "HUMAN_REVIEW",
         evidence_ids=[score.id],
         factors=[DecisionFactor(name="fraud_risk_score", value=0.91, evidence_ids=[score.id])],
         run=run,
     )
-    await xai.finish_run(run)
-    return xai, run, decision
+    await runtime.finish_run(run)
+    return runtime, run, decision
 
 
 @pytest.mark.parametrize("audience", list(Audience))
 async def test_only_internal_audiences_see_the_score(recorded, audience) -> None:
-    xai, run, decision = recorded
+    runtime, run, decision = recorded
 
-    explanation = await xai.explain_decision(decision, audience=audience, run=run)
+    explanation = await runtime.explain_decision(decision, audience=audience, run=run)
 
     if audience == Audience.END_USER:
         assert explanation.contributing_factors == explanation.supporting_evidence == []

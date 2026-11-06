@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Any, TypedDict
 
 from langgraph.graph import END, START, StateGraph
 
-from langgraph_xai import (
+from agxai import (
     Decision,
     DecisionFactor,
     Evidence,
@@ -22,11 +22,11 @@ from langgraph_xai import (
     StoreFilter,
     XAIRuntime,
 )
-from langgraph_xai.storage import InMemoryProvenanceStore
+from agxai.storage import InMemoryProvenanceStore
 
 if TYPE_CHECKING:
-    from langgraph_xai.core import CanonicalEvent
-    from langgraph_xai.plugins import SemanticArtifact
+    from agxai.core import CanonicalEvent
+    from agxai.plugins import SemanticArtifact
 
 
 class State(TypedDict, total=False):

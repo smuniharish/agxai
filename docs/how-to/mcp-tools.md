@@ -23,10 +23,10 @@ client = MultiServerMCPClient(
 )
 tools = await client.get_tools()
 
-xai = XAIRuntime(graph_id="mcp-browser-agent")
-agent = xai.instrument(create_agent(model, tools))
+runtime = XAIRuntime(graph_id="mcp-browser-agent")
+agent = runtime.instrument(create_agent(model, tools))
 
-with xai.collect_runs() as runs:
+with runtime.collect_runs() as runs:
     result = await agent.ainvoke(
         {
             "messages": [
@@ -72,7 +72,7 @@ content or personal data. When a result supports a decision, record what it
 showed as [evidence](../concepts/evidence.md), and point back to the call:
 
 ```python
-await xai.record_evidence(
+await runtime.record_evidence(
     EvidenceType.TOOL_RESULT,
     summary="The page title was 'Example Domain'.",
     content_reference=f"tool-call://{tool_call_id}",

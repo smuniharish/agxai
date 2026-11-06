@@ -14,7 +14,8 @@ the semantic records (`run.evidence`, `run.decisions`), and a counter that
 numbers the run's events.
 
 - **`start_run(config, continuation_of=...)`** builds the `ExecutionContext`
-  from the LangChain config, records a `running` `Execution`, and emits
+  from a config mapping (`metadata` / `configurable`, compatible with LangChain),
+  records a `running` `Execution`, and emits
   `execution.started`. `continuation_of` names the run this one continues.
 - **`record_*` methods** create one canonical record each. Execution records
   (nodes, state changes, tools, retrievals, checkpoints, human interactions)
@@ -31,7 +32,14 @@ A record added after a run has finished, such as an approval made outside the
 graph, rewrites the stored `Execution`, so the store never falls behind the
 in-memory run.
 
-## Instrumented calls
+## Custom framework calls
+
+`FrameworkInstrumentor.capture()` and `capture_sync()` start a run, activate
+it for recording calls, and finish it with the correct outcome. `activate_run`
+can also scope a manually managed run without changing its lifecycle.
+See [Custom frameworks](../integrations/custom-frameworks.md).
+
+## LangGraph instrumented calls
 
 `InstrumentedGraph` drives this lifecycle for every top-level call, as the
 diagram shows:
@@ -55,7 +63,7 @@ mode is recorded the same way.
 
 ## Context propagation
 
-The active run is stored in a context variable. That is why `xai.current_run`
+The active run is stored in a context variable. That is why `runtime.current_run`
 works inside nodes, tools, and middleware without passing anything around:
 
 - LangGraph and LangChain copy the context into the tasks and threads that run
@@ -73,7 +81,7 @@ only to the runtime that started it.
 
 ## Synchronous code
 
-The runtime is asynchronous. `xai.run_sync(coroutine)` runs a coroutine from
+The runtime is asynchronous. `runtime.run_sync(coroutine)` runs a coroutine from
 synchronous code. It is used by the instrumentation of `invoke`, `stream`, and
 `batch`, and by synchronous nodes that record evidence.
 
@@ -108,7 +116,7 @@ policy, attribution, explanation, plugin delivery) is one *operation*.
 
 An operation that raises or times out is handled once, centrally:
 
-1. The error is appended to `xai.errors`, which keeps the last 100 errors.
+1. The error is appended to `runtime.errors`, which keeps the last 100 errors.
 2. In `FAIL_OPEN`, the operation is skipped and the graph continues.
 3. In `FAIL_CLOSED` and `STRICT`, `XAIInstrumentationError` is raised, with the
    original error as `__cause__`. Callback handlers are registered so that
@@ -127,7 +135,7 @@ swallowed. The run is recorded as cancelled, and the cancellation propagates.
 
 ## Closing
 
-`await xai.close()` flushes the observability provider and plugins, then closes
+`await runtime.close()` flushes the observability provider and plugins, then closes
 the store, the observability provider, and the plugins. Every step is attempted
 even if an earlier one fails. In `FAIL_CLOSED` and `STRICT` the first failure is
 raised afterwards. Closing is idempotent. A closed runtime refuses to start new

@@ -7,16 +7,25 @@ from hypothesis import strategies as st
 from langchain_core.messages import AIMessage
 from langchain_core.runnables import RunnableLambda
 
-from langgraph_xai import (
+from agxai import (
     Decision,
+    DecisionFactor,
     ExplanationContext,
     LLMExplanationEngine,
     PolicyAction,
     PolicyDecision,
     StructuredExplanationEngine,
+    XAIConfig,
+    XAIRuntime,
 )
-from langgraph_xai.core import AttributionContribution, AttributionResult, ExecutionStatus
-from langgraph_xai.explanation import ExplanationDraft
+from agxai.core import (
+    AttributionContribution,
+    AttributionResult,
+    ExecutionStatus,
+    ExplanationEngine,
+)
+from agxai.explanation import ExplanationDraft
+from tests.fakes import scripted_model
 from tests.helpers import context, execution, explanation_context
 
 SECTIONS = ("reasons", "contributing_factors", "supporting_evidence")
@@ -295,6 +304,32 @@ async def test_llm_engine_times_out() -> None:
 
     with pytest.raises(TimeoutError):
         await engine.explain(explanation_context())
+
+
+async def test_llm_engine_explains_a_recorded_decision_through_a_chat_model() -> None:
+    # The offline twin of tests/live/test_llm_explanation_live.py: a LangChain chat
+    # model, not a plain runnable, answering through the runtime.
+    model = scripted_model(
+        AIMessage(
+            content='```json\n{"summary": "This case needs human review.", '
+            '"reasons": ["The fraud risk score of 0.91 is high."]}\n```'
+        )
+    )
+    runtime = XAIRuntime(config=XAIConfig(llm_explanation_enabled=True))
+    runtime.register(ExplanationEngine, LLMExplanationEngine(model, enabled=True))
+    run = await runtime.start_run()
+    decision = await runtime.record_decision(
+        "HUMAN_REVIEW",
+        decision_type="routing",
+        factors=[DecisionFactor(name="fraud_risk_score", value=0.91)],
+        run=run,
+    )
+
+    explanation = await runtime.explain_decision(decision, audience="end_user", run=run)
+
+    assert explanation.metadata == {"engine": "llm", "validated": True}
+    assert explanation.summary == "This case needs human review."
+    assert explanation.reasons == ["The fraud risk score of 0.91 is high."]
 
 
 untrusted_json = st.recursive(

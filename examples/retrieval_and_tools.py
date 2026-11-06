@@ -24,7 +24,7 @@ from langgraph.graph import END, START, StateGraph
 from langgraph.graph.message import add_messages
 from langgraph.prebuilt import ToolNode
 
-from langgraph_xai import (
+from agxai import (
     DecisionFactor,
     DecisionType,
     EvidenceType,
@@ -32,7 +32,7 @@ from langgraph_xai import (
     XAIRuntime,
 )
 
-xai = XAIRuntime(application_id="support", tenant_id="acme", graph_id="refund-assistant")
+runtime = XAIRuntime(application_id="support", tenant_id="acme", graph_id="refund-assistant")
 
 POLICIES = [
     Document(
@@ -84,11 +84,11 @@ async def plan(state: Support) -> Support:
 
 
 async def decide(state: Support) -> Support:
-    run = xai.current_run
+    run = runtime.current_run
     assert run is not None
     (retrieval,) = run.execution.retrievals
     evidence = [
-        await xai.record_evidence(
+        await runtime.record_evidence(
             EvidenceType.RETRIEVAL_DOCUMENT,
             summary=f"Policy passage {document.document_id} (rank {document.rank}).",
             content_reference=document.content_reference,
@@ -98,13 +98,13 @@ async def decide(state: Support) -> Support:
         for document in retrieval.documents
     ]
     (lookup,) = run.execution.tools
-    delivery = await xai.record_evidence(
+    delivery = await runtime.record_evidence(
         EvidenceType.TOOL_RESULT,
         summary="Order A-1042 was delivered 12 days ago.",
         content_reference=f"tool-call://{lookup.tool_call_id}",
         confidence=1.0,
     )
-    await xai.record_decision(
+    await runtime.record_decision(
         "APPROVE_REFUND",
         decision_type=DecisionType.APPROVAL,
         candidate_actions=["APPROVE_REFUND", "DENY_REFUND", "ESCALATE"],
@@ -132,8 +132,8 @@ def build_graph():
 
 
 async def main() -> None:
-    graph = xai.instrument(build_graph())
-    with xai.collect_runs() as runs:
+    graph = runtime.instrument(build_graph())
+    with runtime.collect_runs() as runs:
         result = await graph.ainvoke({"question": "Can I get a refund for order A-1042?"})
     (run,) = runs
     execution = run.execution
@@ -155,7 +155,7 @@ async def main() -> None:
             mode="json", include={"tool_name", "tool_call_id", "status", "latency_ms"}
         ),
     )
-    explanation = await xai.explain_decision(run.decisions[0], audience="end_user", run=run)
+    explanation = await runtime.explain_decision(run.decisions[0], audience="end_user", run=run)
     show(
         "Explanation",
         explanation.model_dump(mode="json", include={"summary", "reasons", "disclosure"}),

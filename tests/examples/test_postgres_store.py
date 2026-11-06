@@ -3,20 +3,24 @@ from contextlib import asynccontextmanager
 
 import pytest
 
+from agxai import Execution, ProvenanceLink, ProvenanceStore
+from agxai.core import ExecutionStartedEvent, XAIEvent
+from agxai.storage import StoreFilter
 from examples import postgres_store as postgres_module
 from examples.postgres_store import PostgresProvenanceStore
-from langgraph_xai import Execution, ProvenanceLink, ProvenanceStore
-from langgraph_xai.core import ExecutionStartedEvent
-from langgraph_xai.storage import StoreFilter
 from tests.helpers import context, execution
 
 
 class FakeCursor:
     def __init__(self, rows: list[tuple]) -> None:
         self.rows = rows
+        self.rowcount = len(rows)
 
     async def fetchall(self) -> list[tuple]:
         return self.rows
+
+    async def fetchone(self) -> tuple | None:
+        return self.rows[0] if self.rows else None
 
 
 class FakePool:
@@ -57,8 +61,8 @@ async def test_open_creates_schema_and_indexes() -> None:
     ((sql, params),) = pool.statements
     assert pool.opened == 1
     assert params is None
-    assert "CREATE TABLE IF NOT EXISTS langgraph_xai_records" in sql
-    assert "langgraph_xai_entity_idx" in sql
+    assert "CREATE TABLE IF NOT EXISTS agxai_records" in sql
+    assert "PRIMARY KEY (application_id, tenant_id, run_id, record_type, record_id)" in sql
     assert sql == " ".join(PostgresProvenanceStore.SCHEMA.split())
 
 
@@ -69,6 +73,30 @@ async def test_open_can_skip_schema_creation_for_restricted_roles() -> None:
 
     assert pool.opened == 1
     assert pool.statements == []
+
+
+async def test_migrating_without_a_legacy_table_changes_nothing() -> None:
+    pool = FakePool(rows=[(False,)])
+
+    assert await PostgresProvenanceStore("unused", pool=pool).migrate_legacy_table() == 0
+
+    assert pool.statements == [("SELECT to_regclass(%s) IS NOT NULL", ("langgraph_xai_records",))]
+
+
+async def test_migrating_locks_copies_by_the_new_key_and_drops_the_legacy_table() -> None:
+    def responder(params):
+        return [(True,)] if params else [(), (), ()]
+
+    pool = FakePool(responder=responder)
+
+    assert await PostgresProvenanceStore("unused", pool=pool).migrate_legacy_table() == 3
+
+    _, (lock, _), (insert, _), (drop, _) = pool.statements
+    assert lock == "LOCK TABLE langgraph_xai_records IN ACCESS EXCLUSIVE MODE"
+    assert "SELECT application_id, tenant_id, run_id, record_type, payload->>'id'" in insert
+    assert "FROM langgraph_xai_records" in insert
+    assert "DO NOTHING" in insert
+    assert drop == "DROP TABLE langgraph_xai_records"
 
 
 class UnreachablePool(FakePool):
@@ -99,32 +127,57 @@ async def test_write_upserts_with_isolation_columns_and_event_ids() -> None:
     await store.write(event)
 
     sql, params = pool.statements[0]
-    assert "ON CONFLICT (record_key) DO UPDATE" in sql
+    assert (
+        "ON CONFLICT (application_id, tenant_id, run_id, record_type, record_id) DO UPDATE" in sql
+    )
     assert params is not None
-    assert params[:4] == (
-        f"ExecutionStartedEvent:{event.id}",
-        "ExecutionStartedEvent",
+    assert params[:5] == (
         "app",
         "tenant",
+        event.context.run_id,
+        "ExecutionStartedEvent",
+        str(event.id),
     )
     assert json.loads(params[6])["id"] == str(event.id)
 
 
-async def test_get_decodes_by_record_type_and_detects_ambiguity() -> None:
+async def test_get_is_scoped_decodes_by_record_type_and_detects_ambiguity() -> None:
     record = execution()
-    store = PostgresProvenanceStore("unused", pool=FakePool([row(record)]))
-    assert await store.get(str(record.id)) == record
+    scope = record.context
+    pool = FakePool([row(record)])
+    store = PostgresProvenanceStore("unused", pool=pool)
+    assert await store.get(str(record.id), context=scope) == record
+    sql, params = pool.statements[0]
+    assert "WHERE application_id = %s AND tenant_id = %s AND run_id = %s" in sql
+    assert params == ("app", "tenant", scope.run_id, str(record.id))
 
     text_payload = PostgresProvenanceStore(
         "unused", pool=FakePool([("Execution", json.dumps(record.model_dump(mode="json")))])
     )
-    assert await text_payload.get(str(record.id)) == record
+    assert await text_payload.get(str(record.id), context=scope) == record
 
-    assert await PostgresProvenanceStore("unused", pool=FakePool()).get("missing") is None
+    empty = PostgresProvenanceStore("unused", pool=FakePool())
+    assert await empty.get("missing", context=scope) is None
     with pytest.raises(LookupError, match="ambiguous"):
-        await PostgresProvenanceStore("unused", pool=FakePool([row(record)] * 2)).get("x")
+        await PostgresProvenanceStore("unused", pool=FakePool([row(record)] * 2)).get(
+            "x", context=scope
+        )
     with pytest.raises(ValueError, match="unsupported record type"):
-        await PostgresProvenanceStore("unused", pool=FakePool([("Unknown", {})])).get("x")
+        await PostgresProvenanceStore("unused", pool=FakePool([("Unknown", {})])).get(
+            "x", context=scope
+        )
+
+
+async def test_delete_run_deletes_one_scoped_run_and_reports_the_row_count() -> None:
+    scope = context()
+    pool = FakePool([("row",)] * 3)
+    store = PostgresProvenanceStore("unused", pool=pool)
+
+    assert await store.delete_run(scope) == 3
+
+    ((sql, params),) = pool.statements
+    assert sql.startswith("DELETE FROM agxai_records WHERE application_id = %s")
+    assert params == ("app", "tenant", scope.run_id)
 
 
 async def test_query_passes_filters_and_orders_like_the_memory_store() -> None:
@@ -150,8 +203,8 @@ async def test_query_passes_filters_and_orders_like_the_memory_store() -> None:
         "tenant",
         str(first.context.run_id),
         str(first.context.run_id),
-        "ExecutionStartedEvent",
-        "ExecutionStartedEvent",
+        ["ExecutionStartedEvent"],
+        ["ExecutionStartedEvent"],
         5,
         2,
     )
@@ -199,6 +252,15 @@ def test_missing_driver_is_reported(monkeypatch: pytest.MonkeyPatch) -> None:
 
     with pytest.raises(ImportError, match=r"psycopg\[binary,pool\]"):
         PostgresProvenanceStore("postgresql://localhost/unused")
+
+
+def test_item_type_filters_match_stored_subclasses() -> None:
+    assert postgres_module._record_types(None) is None
+    assert postgres_module._record_types(Execution) == ["Execution"]
+    event_types = postgres_module._record_types(XAIEvent)
+    assert event_types is not None
+    assert {"ExecutionStartedEvent", "InterruptEvent"} <= set(event_types)
+    assert "Execution" not in event_types
 
 
 def test_every_stored_record_type_can_be_decoded() -> None:

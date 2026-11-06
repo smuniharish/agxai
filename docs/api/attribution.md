@@ -5,9 +5,9 @@ evidence contributed to a decision. `HybridAttribution` is the default. See
 [Attribution](../concepts/attribution.md) for a worked example.
 
 ```python
-from langgraph_xai import AttributionEngine, HybridAttribution, RuleBasedAttribution
+from agxai import AttributionEngine, HybridAttribution, RuleBasedAttribution
 
-xai.register(
+runtime.register(
     AttributionEngine,
     HybridAttribution(
         rule_based=RuleBasedAttribution(rules={"customer_tenure_years": -0.3}),
@@ -17,8 +17,8 @@ xai.register(
 )
 ```
 
-::: langgraph_xai.attribution.engines.HybridAttribution
+::: agxai.attribution.engines.HybridAttribution
 
-::: langgraph_xai.attribution.engines.RuleBasedAttribution
+::: agxai.attribution.engines.RuleBasedAttribution
 
-::: langgraph_xai.attribution.engines.EvidenceAttribution
+::: agxai.attribution.engines.EvidenceAttribution

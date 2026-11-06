@@ -1,11 +1,11 @@
 name: Feature request
-description: Suggest an idea or capability for langgraph-xai
+description: Suggest an idea or capability for agxai
 labels: ["enhancement"]
 body:
   - type: markdown
     attributes:
       value: |
-        Thanks for the suggestion. Please note that `langgraph-xai` has
+        Thanks for the suggestion. Please note that `agxai` has
         deliberate scope boundaries (see the project's README) — it is not a
         dashboard, SaaS platform, observability backend, or agent framework.
         Feature requests that fit within "explainability semantics for

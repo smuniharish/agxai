@@ -1,6 +1,6 @@
 import pytest
 
-from langgraph_xai import Evidence, PluginManager
+from agxai import Evidence, PluginManager
 from tests.helpers import RecordingPlugin, context
 
 

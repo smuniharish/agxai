@@ -5,6 +5,64 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+- Framework-neutral `agxai` core with Pydantic as its only direct dependency.
+- Optional `agxai[langgraph]` extra for LangGraph graphs and LangChain Runnables,
+  exposed through `agxai.integrations.langgraph`.
+- `FrameworkInstrumentor` ABC with sync/async run capture for developer-written
+  integrations, plus a dependency-free custom-agent example.
+- `XAIRuntime.activate_run` for context-scoped recording and `InterruptLike`
+  for framework-neutral interrupt payloads.
+- Framework-neutral guides, package paths, skills, tooling, and tests.
+- Documentation, examples, and skills name the runtime instance `runtime`
+  (`runtime = XAIRuntime()`, `runtime.instrument(...)`) instead of `xai`, so it
+  is not mistaken for a module. Record keys such as `xai.run_id` are unchanged.
+- Dependency floors raised to the latest releases, including `langfuse` 5
+  (`agxai[langfuse]` now requires `langfuse>=5.2.0,<6`), `pydantic>=2.14.3`,
+  `langchain-core>=1.7.6`, and `langgraph>=1.2.20`; the build backend is
+  `uv_build>=0.13.7,<0.14`.
+- The model-backed examples and the LLM explanation engine are tested offline
+  with a scripted LangChain fake chat model; real-provider runs stay opt-in.
+- `.env.example` lists only variables something reads, grouped by consumer.
+
+### Breaking changes
+
+- `ProvenanceStore.get` takes a keyword-only `context` and looks the ID up
+  within that run only; it raises `LookupError` when records of different
+  types share the ID in the run.
+- `ProvenanceStore.delete_run(context)` is a new abstract method: it deletes
+  every record of one run, returns how many were deleted, and is idempotent.
+  Use it for erasure requests and retention jobs. Custom stores must
+  implement it.
+- Stores key records by application, tenant, run, record type, and ID. Before,
+  a record whose ID repeated in another tenant or run replaced the first one;
+  it is now a separate record. `InMemoryProvenanceStore` and the PostgreSQL
+  example both changed.
+- The PostgreSQL example stores records in a new table, `agxai_records`,
+  whose primary key is `(application_id, tenant_id, run_id, record_type,
+  record_id)`, replacing `langgraph_xai_records` and its `record_key` column.
+  Call `await store.migrate_legacy_table()` once after `open()`: in one
+  transaction it moves every old row under the new key and drops the old
+  table, and it does nothing when there is no old table.
+
+### Added
+
+- `agxai.testing.ProvenanceStoreContract`, a conformance kit that checks any
+  `ProvenanceStore` against every promise of the store contract under pytest
+  or `unittest`. The in-memory store and the live PostgreSQL store run it.
+- `fail_open` failures are logged as `WARNING`s with their traceback on the
+  `agxai.runtime.runtime` logger. The `agxai` logger has a `NullHandler`, so
+  nothing is printed unless the application configures logging.
+- `scripts/benchmark_overhead.py` measures latency percentiles and peak memory
+  of instrumented graphs and per-event emit latency for each provider.
+
+### Fixed
+
+- The PostgreSQL example's `query` now matches subclasses of `item_type`, so
+  `StoreFilter(item_type=XAIEvent)` returns every event, as the in-memory store
+  does.
+
 ## [1.0.0] - 2026-10-04
 
 The first stable release. The public API, the canonical schema (`schema_version`
@@ -38,7 +96,7 @@ written by 0.1.0 (schema `"1.0.0"`) are not migrated.
 
 #### Runtime and instrumentation
 
-- Removed the `langgraph_xai.instrument()` function; use
+- Removed the `agxai.instrument()` function; use
   `XAIRuntime.instrument()`.
 - `XAICallbackHandler` and `AsyncXAICallbackHandler` are no longer public.
   `XAIRuntime.instrument()` attaches them for you.
@@ -49,7 +107,7 @@ written by 0.1.0 (schema `"1.0.0"`) are not migrated.
 - `record_human_interaction` no longer accepts `continuation_run_id`. Resumed
   runs are linked automatically; `start_run(continuation_of=...)` links a
   manually managed run.
-- `finish_run(interrupts=...)` accepts only LangGraph `Interrupt` objects, and
+- `finish_run(interrupts=...)` accepts interrupt objects with `id` and `value`, and
   `run_sync` accepts only coroutines.
 - `explain` and `explain_decision` raise `XAIInstrumentationError` in every
   failure mode when the exposure policy, attribution, or engine fails, instead
@@ -85,13 +143,13 @@ written by 0.1.0 (schema `"1.0.0"`) are not migrated.
 
 - `Config`; `Event`, `EventUnion`, `ExecutionRecord`, `Attribution`,
   `Relation`, `StateCaptured`, `ExecutionStarted`, `ExecutionCompleted`,
-  `ExecutionFailed`, and `VERSION` in `langgraph_xai.core.models`; `Storage`,
+  `ExecutionFailed`, and `VERSION` in `agxai.core.models`; `Storage`,
   `Observability`, `AttributionProvider`, `ExplanationProvider`, `Policy`, and
-  `Capture` in `langgraph_xai.core.protocols`; `LangSmithProvider`,
+  `Capture` in `agxai.core.protocols`; `LangSmithProvider`,
   `LangfuseProvider`, `NoOpProvider`, `OTelObservability`, and
-  `OpenTelemetryProvider` in `langgraph_xai.observability`. Use the canonical
+  `OpenTelemetryProvider` in `agxai.observability`. Use the canonical
   names.
-- `XAIConfig.event_queue_size`, the private `langgraph_xai._internal` package,
+- `XAIConfig.event_queue_size`, the private `agxai._internal` package,
   and the `docs` extra (documentation tooling is a development dependency
   group).
 
@@ -111,7 +169,7 @@ written by 0.1.0 (schema `"1.0.0"`) are not migrated.
 - **Resume links.** `Execution.continuation_of` names the run a resumed,
   retried, or replayed call continued from, across processes when the
   checkpointer is durable. The run ID is stored in checkpoint metadata under
-  `RUN_ID_METADATA_KEY` (`"langgraph_xai_run_id"`).
+  `RUN_ID_METADATA_KEY` (`"agxai_run_id"`).
 - Static breakpoints (`interrupt_before` and `interrupt_after`) record the run
   as `interrupted` with the pending nodes.
 - `astream_events`, `batch_as_completed`, `abatch_as_completed`, `transform`,
@@ -144,8 +202,8 @@ written by 0.1.0 (schema `"1.0.0"`) are not migrated.
 - Top-level exports for `AttributionResult`, `CapturePolicy`,
   `MemoryOperation`, `NodeExecution`, `PolicyAction`, `PolicyDecision`,
   `RUN_ID_METADATA_KEY`, `SourceReference`, `StateTransition`,
-  `ToolExecution`, and `__version__`. `langgraph_xai.policy` exports
-  `REDACTED` and `is_sensitive_key`, and `langgraph_xai.storage` exports
+  `ToolExecution`, and `__version__`. `agxai.policy` exports
+  `REDACTED` and `is_sensitive_key`, and `agxai.storage` exports
   `ProvenanceStore` and `StoreQuery`.
 - An Agent Skill in the open Agent Skills format, with references, a setup
   check, and a test template, so coding agents integrate the package
@@ -225,7 +283,7 @@ written by 0.1.0 (schema `"1.0.0"`) are not migrated.
 
 ### Added
 
-- Initial public release of `langgraph-xai`.
+- Initial public release of `agxai`.
 - Canonical explainability models: `Execution`, `ProvenanceLink`, `Evidence`,
   `Decision`, `Attribution`, `Explanation`, and policy primitives.
 - `XAIRuntime` with a provider registry, run lifecycle management

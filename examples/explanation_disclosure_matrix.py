@@ -18,7 +18,7 @@ from contextlib import AsyncExitStack
 
 from _shared import chat_model
 
-from langgraph_xai import (
+from agxai import (
     Audience,
     DecisionFactor,
     DecisionType,
@@ -63,23 +63,23 @@ class AudienceScopedPolicy:
         )
 
 
-async def record_underwriting_decision(xai: XAIRuntime):
-    run = await xai.start_run()
-    bureau = await xai.record_evidence(
+async def record_underwriting_decision(runtime: XAIRuntime):
+    run = await runtime.start_run()
+    bureau = await runtime.record_evidence(
         EvidenceType.TOOL_RESULT,
         summary="Credit bureau score 612 (subprime band).",
         content_reference="credit-bureau://reports/9931",
         confidence=0.95,
         run=run,
     )
-    rule = await xai.record_evidence(
+    rule = await runtime.record_evidence(
         EvidenceType.POLICY,
         summary="Underwriting policy requires manual review below a 650 score.",
         content_reference="policy://underwriting/manual-review",
         confidence=1.0,
         run=run,
     )
-    decision = await xai.record_decision(
+    decision = await runtime.record_decision(
         "MANUAL_REVIEW",
         decision_type=DecisionType.ROUTING,
         candidate_actions=["AUTO_APPROVE", "MANUAL_REVIEW", "AUTO_DECLINE"],
@@ -90,14 +90,14 @@ async def record_underwriting_decision(xai: XAIRuntime):
         ],
         run=run,
     )
-    await xai.finish_run(run)
+    await runtime.finish_run(run)
     return run, decision
 
 
 async def main() -> None:
     use_llm = bool(os.getenv("OPENAI_API_KEY"))
-    xai = XAIRuntime(config=XAIConfig(llm_explanation_enabled=use_llm), graph_id="underwriting")
-    run, decision = await record_underwriting_decision(xai)
+    runtime = XAIRuntime(config=XAIConfig(llm_explanation_enabled=use_llm), graph_id="underwriting")
+    run, decision = await record_underwriting_decision(runtime)
     engines: dict[str, ExplanationEngine] = {"structured": StructuredExplanationEngine()}
     policies = {"permissive": PermissivePolicy(), "audience-scoped": AudienceScopedPolicy()}
 
@@ -110,10 +110,12 @@ async def main() -> None:
         for audience in Audience:
             for policy_name, policy in policies.items():
                 for engine_name, engine in engines.items():
-                    xai.register(PolicyProvider, policy)
-                    xai.register(ExplanationEngine, engine)
+                    runtime.register(PolicyProvider, policy)
+                    runtime.register(ExplanationEngine, engine)
                     started = time.perf_counter()
-                    explanation = await xai.explain_decision(decision, audience=audience, run=run)
+                    explanation = await runtime.explain_decision(
+                        decision, audience=audience, run=run
+                    )
                     elapsed = time.perf_counter() - started
                     withheld = policy_name == "audience-scoped" and audience in RESTRICTED
                     assert bool(explanation.contributing_factors) is not withheld

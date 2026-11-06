@@ -1,12 +1,28 @@
-# LangGraph
+# LangGraph and LangChain
 
-`xai.instrument(graph)` wraps any compiled LangGraph graph, or any LangChain
+Install `pip install "agxai[langgraph]"`. LangGraph and LangChain are distinct
+projects; this integration supports both compiled LangGraph graphs and LangChain
+Runnables. Neither is required by the core package.
+
+The explicit entry point is:
+
+```python
+from agxai.integrations.langgraph import LangGraphInstrumentor
+
+graph = LangGraphInstrumentor(runtime).instrument(builder.compile())
+```
+
+`InstrumentedGraph` is exported from `agxai.integrations.langgraph`, not from the
+top-level package. `XAIRuntime.instrument()` lazily delegates to this integration
+and raises an `ImportError` with the install command if the extra is absent.
+
+`runtime.instrument(graph)` wraps any compiled LangGraph graph, or any LangChain
 `Runnable`, without patching LangGraph. It attaches a callback handler to each
 call and reads LangGraph's own metadata to recognize nodes, subgraphs, retries,
 and interrupts.
 
 ```python
-graph = xai.instrument(builder.compile(checkpointer=checkpointer))
+graph = runtime.instrument(builder.compile(checkpointer=checkpointer))
 ```
 
 Instrumenting a graph the same runtime already instruments returns it
@@ -29,7 +45,7 @@ protocol (`stream_events` and `astream_events(version="v3")`), which runs
 inside LangGraph, and LangChain's deprecated `astream_log`. They reach the
 graph unchanged, and the [failure mode](../getting-started/configuration.md#failure-modes)
 decides what happens: `fail_open` keeps a `NotImplementedError` in
-`xai.errors`, and `fail_closed` and `strict` raise `XAIInstrumentationError`
+`runtime.errors`, and `fail_closed` and `strict` raise `XAIInstrumentationError`
 before the graph runs.
 
 Every other attribute, such as `get_state`, `update_state`, or `get_graph`, is
@@ -82,25 +98,25 @@ checkpoint, sets `continuation_of` to the run that wrote the checkpoint it
 starts from.
 
 To make this work across processes, the graph receives the run ID in its config
-metadata under `RUN_ID_METADATA_KEY` (`"langgraph_xai_run_id"`), and LangGraph
+metadata under `RUN_ID_METADATA_KEY` (`"agxai_run_id"`), and LangGraph
 stores it in the metadata of every checkpoint the run writes. Set
 `XAIConfig(capture_checkpoints=False)` to skip the state reads this needs. See
 [how runs are linked](../how-to/interrupts.md#how-runs-are-linked).
 
 ## Inside nodes
 
-`xai.current_run` is the run of the call executing the node. Record evidence and
-decisions with the async `record_*` methods, or wrap them in `xai.run_sync(...)`
+`runtime.current_run` is the run of the call executing the node. Record evidence and
+decisions with the async `record_*` methods, or wrap them in `runtime.run_sync(...)`
 inside synchronous nodes:
 
 ```python
 async def route(state: Review) -> Review:
-    await xai.record_decision("HUMAN_REVIEW", decision_type=DecisionType.ROUTING)
+    await runtime.record_decision("HUMAN_REVIEW", decision_type=DecisionType.ROUTING)
     return {"route": "HUMAN_REVIEW"}
 
 
 def route_sync(state: Review) -> Review:
-    xai.run_sync(xai.record_decision("HUMAN_REVIEW", decision_type=DecisionType.ROUTING))
+    runtime.run_sync(runtime.record_decision("HUMAN_REVIEW", decision_type=DecisionType.ROUTING))
     return {"route": "HUMAN_REVIEW"}
 ```
 

@@ -12,7 +12,7 @@ Run with:
 
 import asyncio
 
-from langgraph_xai import (
+from agxai import (
     Audience,
     DecisionFactor,
     DecisionType,
@@ -33,20 +33,20 @@ def banner(title: str) -> None:
 
 
 async def main() -> None:
-    xai = XAIRuntime(application_id="payments", tenant_id="acme-bank", graph_id="fraud-review")
-    run = await xai.start_run({"metadata": {"trace_id": "trace-8841"}})
+    runtime = XAIRuntime(application_id="payments", tenant_id="acme-bank", graph_id="fraud-review")
+    run = await runtime.start_run({"metadata": {"trace_id": "trace-8841"}})
 
-    await xai.record_state_delta(
+    await runtime.record_state_delta(
         "score_transaction", {"risk_score": 0.0}, {"risk_score": 0.91}, run=run
     )
-    await xai.record_tool(
+    await runtime.record_tool(
         "fraud_detector",
         status=ToolStatus.SUCCEEDED,
         latency_ms=42.5,
         output_reference="fraud-detector://scores/txn-8841",
         run=run,
     )
-    score = await xai.record_evidence(
+    score = await runtime.record_evidence(
         EvidenceType.TOOL_RESULT,
         summary="Fraud detector scored the transaction 0.91 (high risk).",
         content_reference="fraud-detector://scores/txn-8841",
@@ -54,14 +54,14 @@ async def main() -> None:
         quality=0.9,
         run=run,
     )
-    threshold = await xai.record_evidence(
+    threshold = await runtime.record_evidence(
         EvidenceType.POLICY,
         summary="Bank policy requires human review above a 0.80 risk score.",
         content_reference="policy://fraud/review-threshold",
         confidence=1.0,
         run=run,
     )
-    decision = await xai.record_decision(
+    decision = await runtime.record_decision(
         "HUMAN_REVIEW",
         decision_type=DecisionType.ROUTING,
         candidate_actions=["AUTO_APPROVE", "HUMAN_REVIEW", "AUTO_DECLINE"],
@@ -77,12 +77,12 @@ async def main() -> None:
         confidence=0.91,
         run=run,
     )
-    await xai.record_provenance(
+    await runtime.record_provenance(
         "bank-api://accounts/4471/transactions/8841", "transaction://8841", "PRODUCED_BY", run=run
     )
-    await xai.record_provenance("transaction://8841", score.id, "DERIVED_FROM", run=run)
-    await xai.record_provenance(score.id, decision.id, "SUPPORTED_BY", run=run)
-    await xai.finish_run(run)
+    await runtime.record_provenance("transaction://8841", score.id, "DERIVED_FROM", run=run)
+    await runtime.record_provenance(score.id, decision.id, "SUPPORTED_BY", run=run)
+    await runtime.finish_run(run)
 
     banner("Execution")
     print(run.execution.model_dump_json(indent=2))
@@ -94,7 +94,7 @@ async def main() -> None:
     print(decision.model_dump_json(indent=2, exclude=CONTEXT_FIELDS))
 
     banner("Provenance lineage of the decision")
-    store = xai.registry.require(ProvenanceStore)
+    store = runtime.registry.require(ProvenanceStore)
     for link in await store.lineage(str(decision.id), context=run.execution.context):
         print(link.model_dump_json(indent=2, include={"source_id", "target_id", "relation"}))
 
@@ -105,17 +105,17 @@ async def main() -> None:
         audience=Audience.AUDITOR,
     )
     banner("Attribution")
-    attribution = await xai.attribute(context)
+    attribution = await runtime.attribute(context)
     print(attribution.model_dump_json(indent=2, exclude=CONTEXT_FIELDS))
 
     banner("Policy decision (end user, exposure)")
-    policy = xai.registry.require(PolicyProvider)
+    policy = runtime.registry.require(PolicyProvider)
     end_user = context.model_copy(update={"audience": Audience.END_USER})
     exposure = await policy.evaluate(end_user, PolicyAction.EXPOSE)
     print(exposure.model_dump_json(indent=2, exclude=CONTEXT_FIELDS))
 
     banner("Explanation (auditor)")
-    explanation = await xai.explain_decision(decision, audience=Audience.AUDITOR, run=run)
+    explanation = await runtime.explain_decision(decision, audience=Audience.AUDITOR, run=run)
     print(explanation.model_dump_json(indent=2, exclude=CONTEXT_FIELDS))
 
 

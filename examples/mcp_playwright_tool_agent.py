@@ -23,7 +23,7 @@ from _shared import chat_model, show
 from langchain.agents import create_agent
 from langchain_mcp_adapters.client import MultiServerMCPClient
 
-from langgraph_xai import XAIRuntime
+from agxai import XAIRuntime
 
 
 async def main() -> None:
@@ -39,15 +39,15 @@ async def main() -> None:
     tools = await client.get_tools()
     print(f"Loaded {len(tools)} MCP tools, e.g. {[item.name for item in tools[:4]]}")
 
-    xai = XAIRuntime(graph_id="mcp-browser-agent")
+    runtime = XAIRuntime(graph_id="mcp-browser-agent")
     task = (
         "Use the browser tools to open https://example.com and report only the exact "
         "page title you observed."
     )
     async with chat_model() as model:
         agent = create_agent(model, tools)
-        with xai.collect_runs() as runs:
-            result = await xai.instrument(agent).ainvoke(
+        with runtime.collect_runs() as runs:
+            result = await runtime.instrument(agent).ainvoke(
                 {"messages": [{"role": "user", "content": task}]}
             )
     (run,) = runs

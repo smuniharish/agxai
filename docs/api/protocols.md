@@ -6,30 +6,30 @@ satisfies structurally. See [Extensibility](../architecture/plugins.md) for the
 contracts each provider must keep.
 
 ```python
-from langgraph_xai import PolicyProvider, ProvenanceStore
+from agxai import PolicyProvider, ProvenanceStore
 
-xai.register(ProvenanceStore, MyDatabaseStore())
-xai.register(PolicyProvider, MyPolicy())
+runtime.register(ProvenanceStore, MyDatabaseStore())
+runtime.register(PolicyProvider, MyPolicy())
 ```
 
 ## Storage
 
-::: langgraph_xai.core.protocols.ProvenanceStore
+::: agxai.core.protocols.ProvenanceStore
 
-::: langgraph_xai.core.protocols.StoreQuery
+::: agxai.core.protocols.StoreQuery
 
 ## Observability
 
-::: langgraph_xai.core.protocols.ObservabilityProvider
+::: agxai.core.protocols.ObservabilityProvider
 
 ## Policies
 
-::: langgraph_xai.core.protocols.CapturePolicy
+::: agxai.core.protocols.CapturePolicy
 
-::: langgraph_xai.core.protocols.PolicyProvider
+::: agxai.core.protocols.PolicyProvider
 
 ## Attribution and explanation
 
-::: langgraph_xai.core.protocols.AttributionEngine
+::: agxai.core.protocols.AttributionEngine
 
-::: langgraph_xai.core.protocols.ExplanationEngine
+::: agxai.core.protocols.ExplanationEngine

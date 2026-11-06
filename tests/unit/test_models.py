@@ -7,7 +7,7 @@ from hypothesis import given
 from hypothesis import strategies as st
 from pydantic import TypeAdapter, ValidationError
 
-from langgraph_xai.core import (
+from agxai.core import (
     SCHEMA_VERSION,
     AttributionContribution,
     CanonicalEvent,

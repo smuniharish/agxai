@@ -20,7 +20,7 @@ from create_agent_decision_explanation import DecisionRecorder, check_fraud_risk
 from langchain.agents import create_agent
 from langgraph.graph import END, START, StateGraph
 
-from langgraph_xai import Audience, XAIRuntime
+from agxai import Audience, XAIRuntime
 
 
 class Review(TypedDict, total=False):
@@ -29,7 +29,7 @@ class Review(TypedDict, total=False):
     answer: str
 
 
-def build_graph(xai: XAIRuntime, model: Any):
+def build_graph(runtime: XAIRuntime, model: Any):
     async def intake(state: Review) -> Review:
         return {"validated": bool(state.get("query"))}
 
@@ -38,7 +38,7 @@ def build_graph(xai: XAIRuntime, model: Any):
             model,
             tools=[check_fraud_risk],
             system_prompt="You are a fraud review assistant. Use the tool, then answer briefly.",
-            middleware=[DecisionRecorder(xai)],
+            middleware=[DecisionRecorder(runtime)],
         )
         result = await inner.ainvoke({"messages": [{"role": "user", "content": state["query"]}]})
         return {"answer": result["messages"][-1].content}
@@ -58,10 +58,10 @@ def build_graph(xai: XAIRuntime, model: Any):
 
 
 async def main() -> None:
-    xai = XAIRuntime(graph_id="fraud-review-nested")
+    runtime = XAIRuntime(graph_id="fraud-review-nested")
     async with chat_model() as model:
-        graph = xai.instrument(build_graph(xai, model))
-        with xai.collect_runs() as runs:
+        graph = runtime.instrument(build_graph(runtime, model))
+        with runtime.collect_runs() as runs:
             result = await graph.ainvoke({"query": "Transaction txn-8841 is $9200. Is it risky?"})
     (run,) = runs
 
@@ -76,7 +76,9 @@ async def main() -> None:
             "decisions": [item.selected_action for item in run.decisions],
         },
     )
-    explanation = await xai.explain_decision(run.decisions[-1], audience=Audience.END_USER, run=run)
+    explanation = await runtime.explain_decision(
+        run.decisions[-1], audience=Audience.END_USER, run=run
+    )
     show("Explanation", explanation.model_dump(mode="json", include={"summary", "reasons"}))
 
 

@@ -1,17 +1,17 @@
 # LangSmith
 
-`LangSmithObservability` sends `langgraph-xai` events to
+`LangSmithObservability` sends `agxai` events to
 [LangSmith](https://smith.langchain.com) as a trace per run, next to the traces
 LangChain already produces.
 
 ```bash
-pip install "langgraph-xai[langsmith]"
+pip install "agxai[langsmith]"
 ```
 
 ```python
-from langgraph_xai import LangSmithObservability, ObservabilityProvider
+from agxai import LangSmithObservability, ObservabilityProvider
 
-xai.register(ObservabilityProvider, LangSmithObservability(project_name="fraud-review"))
+runtime.register(ObservabilityProvider, LangSmithObservability(project_name="fraud-review"))
 ```
 
 Without a `client`, the adapter creates `langsmith.Client()`, which reads
@@ -22,7 +22,7 @@ the environment. To reuse a configured client, pass `client=`.
 
 | LangSmith run | Contents |
 | --- | --- |
-| Root run `langgraph-xai: <graph_id>` | One per `langgraph-xai` run. The trace ID is the `run_id`. Inputs are the application, tenant, and graph IDs. |
+| Root run `agxai: <graph_id>` | One per `agxai` run. The trace ID is the `run_id`. Inputs are the application, tenant, and graph IDs. |
 | One child run per event | Named after the event type (`node.execution`, `state.transition`, `tool.execution`, ...). Inputs are the canonical event JSON, and metadata holds the `xai.*` correlation fields. |
 
 The root run ends when the run completes, fails, or is interrupted. Its outputs
@@ -36,14 +36,14 @@ With `LANGSMITH_TRACING=true`, LangChain traces the graph itself: every node,
 model call, and token count. The adapter adds a second trace for the same call
 that contains the explainability records. Find it by searching the project for
 metadata `xai.run_id`, or by `trace_id` if you pass one in the config. See
-[LangSmith and langgraph-xai](langsmith-vs-langgraph-xai.md) for how the two
+[LangSmith and agxai](langsmith-vs-agxai.md) for how the two
 complement each other.
 
 ## Lifecycle
 
 ```python
-await xai.flush()  # send buffered runs, for example at the end of a batch job
-await xai.close()  # flush, then close the client the adapter created
+await runtime.flush()  # send buffered runs, for example at the end of a batch job
+await runtime.close()  # flush, then close the client the adapter created
 ```
 
 A client you pass in is flushed but never closed. The adapter tracks up to

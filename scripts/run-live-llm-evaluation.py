@@ -25,7 +25,7 @@ from typing import TypedDict
 
 from langchain_openai import ChatOpenAI
 
-from langgraph_xai.core import (
+from agxai.core import (
     Decision,
     DecisionFactor,
     Execution,
@@ -35,7 +35,7 @@ from langgraph_xai.core import (
     PolicyAction,
     PolicyDecision,
 )
-from langgraph_xai.explanation import LLMExplanationEngine
+from agxai.explanation import LLMExplanationEngine
 
 
 class Case(TypedDict):

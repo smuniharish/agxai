@@ -4,7 +4,7 @@ An agent uses browser tools served by the
 [Playwright MCP server](https://github.com/microsoft/playwright-mcp) over stdio.
 The tools are loaded with `langchain-mcp-adapters`, so they are ordinary
 LangChain tools, and every call is captured. Source:
-[`examples/mcp_playwright_tool_agent.py`](https://github.com/smuniharish/langgraph-xai/blob/master/examples/mcp_playwright_tool_agent.py).
+[`examples/mcp_playwright_tool_agent.py`](https://github.com/smuniharish/agxai/blob/master/examples/mcp_playwright_tool_agent.py).
 
 Requires Node.js (for `npx`) and a browser for Playwright. Chrome is used by
 default; set `PLAYWRIGHT_MCP_BROWSER=msedge` (or another supported browser) to
@@ -23,10 +23,12 @@ client = MultiServerMCPClient(
 )
 tools = await client.get_tools()
 
-xai = XAIRuntime(graph_id="mcp-browser-agent")
+runtime = XAIRuntime(graph_id="mcp-browser-agent")
 agent = create_agent(chat_model(), tools)
-with xai.collect_runs() as runs:
-    result = await xai.instrument(agent).ainvoke({"messages": [{"role": "user", "content": task}]})
+with runtime.collect_runs() as runs:
+    result = await runtime.instrument(agent).ainvoke(
+        {"messages": [{"role": "user", "content": task}]}
+    )
 ```
 
 ## Output

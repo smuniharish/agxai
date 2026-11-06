@@ -5,8 +5,8 @@ import pytest
 from hypothesis import given
 from hypothesis import strategies as st
 
-from langgraph_xai.core import ExecutionStartedEvent
-from langgraph_xai.observability import (
+from agxai.core import ExecutionStartedEvent
+from agxai.observability import (
     AdapterClosedError,
     NoOpObservability,
     ObservabilityAdapter,
@@ -15,7 +15,7 @@ from langgraph_xai.observability import (
     correlation_fields,
     event_payload,
 )
-from langgraph_xai.observability.base import optional_import
+from agxai.observability.base import optional_import
 from tests.helpers import context
 
 
@@ -167,7 +167,7 @@ def test_correlation_fields_include_only_present_identifiers() -> None:
 
 def test_optional_import_names_the_missing_extra() -> None:
     assert optional_import("json", "json").dumps({}) == "{}"
-    with pytest.raises(OptionalDependencyError, match=r"pip install 'langgraph-xai\[otel\]'"):
+    with pytest.raises(OptionalDependencyError, match=r"pip install 'agxai\[otel\]'"):
         optional_import(f"not_a_module_{uuid4().hex}", "otel")
 
 

@@ -4,12 +4,12 @@ flowchart LR
     classDef backend fill:#ecf8f1,stroke:#2f8f5b,color:#0f2547
 
     events["Canonical events<br/>execution · node · state · tool<br/>retrieval · interrupt"]:::core
-    fields["correlation_fields<br/>xai.run_id · xai.event_id · xai.tenant_id<br/>xai.trace_id · ..."]:::core
+    fields["correlation_fields<br/>runtime.run_id · runtime.event_id · runtime.tenant_id<br/>runtime.trace_id · ..."]:::core
     events --> fields
 
     fields --> langsmith["LangSmithObservability<br/>one trace per run (trace ID = run_id)<br/>one child run per event"]:::adapter
     fields --> langfuse["LangfuseObservability<br/>one event observation per event<br/>trace = run_id.hex or your trace ID"]:::adapter
-    fields --> otel["OpenTelemetryObservability<br/>one span per event<br/>attributes + xai.payload JSON"]:::adapter
+    fields --> otel["OpenTelemetryObservability<br/>one span per event<br/>attributes + runtime.payload JSON"]:::adapter
 
     langsmith --> ls[("LangSmith")]:::backend
     langfuse --> lf[("Langfuse")]:::backend

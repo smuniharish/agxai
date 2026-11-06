@@ -1,5 +1,5 @@
 <!--
-Thanks for contributing to langgraph-xai! Please fill out this template —
+Thanks for contributing to agxai! Please fill out this template —
 it helps reviewers understand and validate your change quickly.
 -->
 
@@ -25,7 +25,7 @@ it helps reviewers understand and validate your change quickly.
 - [ ] New/changed public behavior is covered by tests.
 - [ ] `uv run ruff check .` and `uv run ruff format --check .` pass.
 - [ ] `uv run pyrefly check` passes.
-- [ ] `uv run pytest --cov=langgraph_xai --cov-branch` passes with 100% coverage.
+- [ ] `uv run pytest --cov=agxai --cov-branch` passes with 100% coverage.
 - [ ] `uv run mkdocs build --strict` passes, and diagrams were re-rendered if
       a `diagrams/*.mmd` source changed.
 - [ ] Relevant docs under `docs/` were updated (if this changes public API,

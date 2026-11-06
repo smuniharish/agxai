@@ -1,9 +1,9 @@
 # create_agent decision
 
 `create_agent` from LangChain compiles to an ordinary LangGraph graph, so
-`xai.instrument` needs no special handling, and every tool call is captured. A
+`runtime.instrument` needs no special handling, and every tool call is captured. A
 middleware records the decision once the model has answered. Source:
-[`examples/create_agent_decision_explanation.py`](https://github.com/smuniharish/langgraph-xai/blob/master/examples/create_agent_decision_explanation.py).
+[`examples/create_agent_decision_explanation.py`](https://github.com/smuniharish/agxai/blob/master/examples/create_agent_decision_explanation.py).
 
 ```bash
 export OPENAI_API_KEY=...
@@ -20,18 +20,19 @@ and decides whether to escalate:
 class DecisionRecorder(AgentMiddleware):
     """When the agent finishes, record its tool results as evidence and decide on escalation."""
 
-    def __init__(self, xai: XAIRuntime, threshold: float = 0.8) -> None:
+    def __init__(self, runtime: XAIRuntime, threshold: float = 0.8) -> None:
         super().__init__()
-        self.xai = xai
+        self.runtime = runtime
         self.threshold = threshold
 
     async def aafter_model(self, state: Any, runtime: Any) -> dict[str, Any] | None:
+        # `runtime` is the agent's LangGraph runtime (injected by name); agxai's is self.runtime.
         messages = state["messages"]
         if getattr(messages[-1], "tool_calls", None):
             return None
         results = [message for message in messages if isinstance(message, ToolMessage)]
         evidence = [
-            await self.xai.record_evidence(
+            await self.runtime.record_evidence(
                 EvidenceType.TOOL_RESULT,
                 summary=f"{message.name} returned {message.content}.",
                 content_reference=f"tool-call://{message.tool_call_id}",
@@ -40,7 +41,7 @@ class DecisionRecorder(AgentMiddleware):
             for message in results
         ]
         score = max((float(message.content) for message in results), default=0.0)
-        await self.xai.record_decision(
+        await self.runtime.record_decision(
             "ESCALATE_FOR_REVIEW" if score >= self.threshold else "NO_ACTION",
             decision_type=DecisionType.ESCALATION,
             candidate_actions=["ESCALATE_FOR_REVIEW", "NO_ACTION"],
@@ -62,11 +63,11 @@ agent = create_agent(
     chat_model(),
     tools=[check_fraud_risk],
     system_prompt="You are a fraud review assistant. Use the tool, then answer briefly.",
-    middleware=[DecisionRecorder(xai)],
+    middleware=[DecisionRecorder(runtime)],
 )
 
-with xai.collect_runs() as runs:
-    result = await xai.instrument(agent).ainvoke(
+with runtime.collect_runs() as runs:
+    result = await runtime.instrument(agent).ainvoke(
         {"messages": [{"role": "user", "content": "Transaction txn-8841 is $9200. Is it risky?"}]}
     )
 ```

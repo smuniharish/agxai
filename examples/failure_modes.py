@@ -15,7 +15,7 @@ from typing import TypedDict
 
 from langgraph.graph import END, START, StateGraph
 
-from langgraph_xai import (
+from agxai import (
     FailureMode,
     InMemoryProvenanceStore,
     ProvenanceStore,
@@ -45,16 +45,16 @@ def build_graph():
 
 
 async def run_with(mode: FailureMode) -> None:
-    xai = XAIRuntime(config=XAIConfig(failure_mode=mode), graph_id="failure-modes")
-    xai.register(ProvenanceStore, UnavailableStore())
+    runtime = XAIRuntime(config=XAIConfig(failure_mode=mode), graph_id="failure-modes")
+    runtime.register(ProvenanceStore, UnavailableStore())
     print(f"\n--- failure_mode={mode.value} ---")
     try:
-        result = await xai.instrument(build_graph()).ainvoke({"value": 1})
+        result = await runtime.instrument(build_graph()).ainvoke({"value": 1})
     except XAIInstrumentationError as error:
         print(f"graph call raised {type(error).__name__}: {error}")
     else:
         print(f"graph call returned {result}")
-    print(f"runtime.errors holds {len(xai.errors)} error(s); first: {xai.errors[0]!r}")
+    print(f"runtime.errors holds {len(runtime.errors)} error(s); first: {runtime.errors[0]!r}")
 
 
 async def main() -> None:

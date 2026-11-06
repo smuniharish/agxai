@@ -1,7 +1,7 @@
 # Correlate multi-agent runs and retries
 
 A request often passes through several agents, subgraphs, retries, and services.
-`langgraph-xai` gives everything one call produces a shared identity, so you
+`agxai` gives everything one call produces a shared identity, so you
 can collect it with one query.
 
 ## One call, one run, one identity
@@ -65,7 +65,7 @@ timeout is recorded next to the successful retry.
 ## Query everything a run produced
 
 ```python
-store = xai.registry.require(ProvenanceStore)
+store = runtime.registry.require(ProvenanceStore)
 records = [
     record
     async for record in store.query(

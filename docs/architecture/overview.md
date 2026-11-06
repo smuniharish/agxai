@@ -1,16 +1,17 @@
 # Architecture overview
 
-`langgraph-xai` is a library that runs inside your process. It has three
-layers: instrumentation that observes a LangGraph call, a runtime that turns
+`agxai` is a library that runs inside your process. It has three
+layers: framework-specific instrumentation that observes an agent call, a runtime that turns
 observations into canonical records, and replaceable providers that store,
 export, attribute, filter, and explain them.
 
-![langgraph-xai architecture](../assets/diagrams/architecture-overview.png)
+![agxai architecture](../assets/diagrams/architecture-overview.png)
 
 ## Components
 
 | Component | Responsibility |
 | --- | --- |
+| `FrameworkInstrumentor` | Framework extension ABC with sync/async capture helpers. Custom adapters translate their framework's public lifecycle into runtime recording calls. |
 | `InstrumentedGraph` | A transparent proxy around a compiled graph. Starts and finishes a run for each top-level call, such as `invoke`, `stream`, or `astream_events`, and each batch input. Attaches the callback handler and, for a checkpointed thread, links the run to its checkpoints and to the run it continues. |
 | Callback handlers | Recognize LangGraph nodes, state changes, tool calls, retrievers, and interrupts from LangChain callbacks, and record them through the runtime. |
 | `XAIRuntime` | Owns configuration, the registry, and plugins. Builds canonical records, applies redaction and the capture policy, delivers records to sinks, enforces concurrency, timeouts, and the failure mode, and assembles explanations. |
@@ -18,7 +19,11 @@ export, attribute, filter, and explain them.
 | Providers | `ProvenanceStore` (an abstract base class), plus `ObservabilityProvider`, `CapturePolicy`, `PolicyProvider`, `AttributionEngine`, and `ExplanationEngine` (each a small `typing.Protocol`), all with built-in defaults. |
 | Plugins | Receive every evidence, decision, and memory record. |
 
-## Lifecycle of a call
+## Lifecycle of a LangGraph call
+
+The bundled `langgraph` extra provides the proxy below. Custom frameworks use
+the same runtime lifecycle via `FrameworkInstrumentor.capture()` or
+`capture_sync()`; see [Custom frameworks](../integrations/custom-frameworks.md).
 
 1. `graph.ainvoke(input, config)` reaches the `InstrumentedGraph`. If the call
    continues a checkpointed thread, the proxy reads the checkpoint it starts
@@ -59,16 +64,18 @@ details of each step.
 
 | Module | Contents |
 | --- | --- |
-| `langgraph_xai.core` | Canonical models and capability protocols |
-| `langgraph_xai.runtime` | `XAIRuntime`, `Run`, `Registry`, `XAIInstrumentationError`, `RUN_ID_METADATA_KEY` |
-| `langgraph_xai.instrumentation` | `InstrumentedGraph` and its callback handlers |
-| `langgraph_xai.policy` | Redaction, `DefaultCapturePolicy`, `DefaultPolicyProvider` |
-| `langgraph_xai.attribution` | `HybridAttribution`, `RuleBasedAttribution`, `EvidenceAttribution` |
-| `langgraph_xai.explanation` | `StructuredExplanationEngine`, `LLMExplanationEngine` |
-| `langgraph_xai.storage` | The `ProvenanceStore` base class, `InMemoryProvenanceStore`, `StoreFilter` |
-| `langgraph_xai.observability` | LangSmith, Langfuse, OpenTelemetry, and no-op adapters |
-| `langgraph_xai.plugins` | `XAIPlugin`, `PluginManager` |
+| `agxai.core` | Canonical models and capability protocols |
+| `agxai.runtime` | `XAIRuntime`, `Run`, `Registry`, `XAIInstrumentationError`, `RUN_ID_METADATA_KEY` |
+| `agxai.integrations` | `FrameworkInstrumentor` ABC (no framework dependencies) |
+| `agxai.integrations.langgraph` | Optional `LangGraphInstrumentor`, `InstrumentedGraph`, and callback handlers |
+| `agxai.policy` | Redaction, `DefaultCapturePolicy`, `DefaultPolicyProvider` |
+| `agxai.attribution` | `HybridAttribution`, `RuleBasedAttribution`, `EvidenceAttribution` |
+| `agxai.explanation` | `StructuredExplanationEngine`, `LLMExplanationEngine` |
+| `agxai.storage` | The `ProvenanceStore` base class, `InMemoryProvenanceStore`, `StoreFilter` |
+| `agxai.observability` | LangSmith, Langfuse, OpenTelemetry, and no-op adapters |
+| `agxai.plugins` | `XAIPlugin`, `PluginManager` |
 
-The classes you use day to day are importable from the top-level
-`langgraph_xai` package. The [API reference](../api/index.md) lists every
+Core classes are importable from the top-level `agxai` package; optional
+framework classes are imported from their integration modules.
+The [API reference](../api/index.md) lists every
 public class and function with the module it lives in.

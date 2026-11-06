@@ -1,8 +1,10 @@
 # Execution
 
-An `Execution` is the record of one instrumented call, such as one `invoke`,
-`stream`, or `astream_events`, or one input of a `batch`. Instrumentation builds
-it automatically while the graph runs. You never construct it yourself.
+An `Execution` is the framework-neutral record of one run, such as an agent
+invocation or crew workflow. Create it through `start_run` or a
+`FrameworkInstrumentor` capture context, not by constructing models yourself.
+With the optional LangGraph integration, it represents one `invoke`, `stream`,
+or `astream_events`, or one input of a `batch`, and is built automatically.
 
 ## Lifecycle
 
@@ -23,6 +25,10 @@ checkpointer, the resumed run's `continuation_of` is the `run_id` of the run
 that paused. See [Human-in-the-loop](../how-to/interrupts.md).
 
 ## What is captured
+
+The automatic capture described below is provided by the LangGraph integration.
+Custom framework instrumentors use the same canonical fields by translating
+their framework's events into runtime `record_*` calls.
 
 | Field | Contains | Recorded |
 | --- | --- | --- |

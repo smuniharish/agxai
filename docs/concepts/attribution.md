@@ -12,7 +12,7 @@ Attribution answers "how much did each input contribute to this decision?". An
   same scores, in the same order.
 
 Attribution runs on demand, when you call `explain`, `explain_decision`, or
-`xai.attribute(context)`. It is never computed in the hot path of a graph run.
+`runtime.attribute(context)`. It is never computed in the hot path of a graph run.
 
 ## Built-in engines
 
@@ -77,7 +77,7 @@ has 1.0. The default engine gives each family half of the total:
 ```
 
 (Real output from the
-[canonical model gallery](https://github.com/smuniharish/langgraph-xai/blob/master/examples/canonical_model_gallery.py);
+[canonical model gallery](https://github.com/smuniharish/agxai/blob/master/examples/canonical_model_gallery.py);
 `schema_version`, `id`, `timestamp`, `context`, and empty `metadata` omitted.)
 
 Reading it:
@@ -95,9 +95,9 @@ factors that argue against the selected action, and change the balance between
 factors and evidence:
 
 ```python
-from langgraph_xai import AttributionEngine, HybridAttribution, RuleBasedAttribution
+from agxai import AttributionEngine, HybridAttribution, RuleBasedAttribution
 
-xai.register(
+runtime.register(
     AttributionEngine,
     HybridAttribution(
         rule_based=RuleBasedAttribution(

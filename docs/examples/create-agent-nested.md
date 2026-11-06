@@ -4,7 +4,7 @@ A `create_agent` agent is built and invoked inside one node of a larger
 three-node graph. Only the outer graph is instrumented, yet the inner agent's
 tool calls and the decision its middleware records belong to the same run.
 Source:
-[`examples/create_agent_inside_node.py`](https://github.com/smuniharish/langgraph-xai/blob/master/examples/create_agent_inside_node.py).
+[`examples/create_agent_inside_node.py`](https://github.com/smuniharish/agxai/blob/master/examples/create_agent_inside_node.py).
 
 ```bash
 export OPENAI_API_KEY=...
@@ -19,7 +19,7 @@ async def agent(state: Review) -> Review:
         model,
         tools=[check_fraud_risk],
         system_prompt="You are a fraud review assistant. Use the tool, then answer briefly.",
-        middleware=[DecisionRecorder(xai)],
+        middleware=[DecisionRecorder(runtime)],
     )
     result = await inner.ainvoke({"messages": [{"role": "user", "content": state["query"]}]})
     return {"answer": result["messages"][-1].content}

@@ -1,10 +1,10 @@
-site_name: langgraph-xai
+site_name: agxai
 site_description: >-
-  Explainability for LangGraph applications: what ran, why it was decided,
+  Framework-agnostic explainability for AI agents: what ran, why it was decided,
   and what each audience may see.
-site_url: https://langgraph-xai.readthedocs.io/en/latest/
-repo_name: smuniharish/langgraph-xai
-repo_url: https://github.com/smuniharish/langgraph-xai
+site_url: https://agxai.readthedocs.io/en/latest/
+repo_name: smuniharish/agxai
+repo_url: https://github.com/smuniharish/agxai
 edit_uri: edit/master/docs/
 copyright: Released under the Apache License 2.0.
 
@@ -110,6 +110,7 @@ nav:
       - Configure failure modes: how-to/failure-modes.md
   - Examples:
       - Overview: examples/index.md
+      - Custom framework: examples/custom-framework.md
       - Minimal graph: examples/minimal-graph.md
       - "Fraud review: full explanation": examples/full-explanation.md
       - Retrieval and tools: examples/retrieval-and-tools.md
@@ -123,11 +124,12 @@ nav:
       - PostgreSQL store: examples/postgres-store.md
   - Integrations:
       - Overview: integrations/index.md
-      - LangGraph: integrations/langgraph.md
+      - LangGraph and LangChain: integrations/langgraph.md
+      - Custom frameworks (Agno, CrewAI, others): integrations/custom-frameworks.md
       - LangSmith: integrations/langsmith.md
       - Langfuse: integrations/langfuse.md
       - OpenTelemetry: integrations/opentelemetry.md
-      - LangSmith and langgraph-xai: integrations/langsmith-vs-langgraph-xai.md
+      - LangSmith and agxai: integrations/langsmith-vs-agxai.md
   - Architecture:
       - Overview: architecture/overview.md
       - Runtime: architecture/runtime.md
@@ -140,6 +142,7 @@ nav:
   - API reference:
       - Overview: api/index.md
       - Runtime: api/runtime.md
+      - Framework integrations: api/integrations.md
       - Configuration: api/config.md
       - Canonical models: api/models.md
       - Capabilities: api/protocols.md
@@ -149,6 +152,7 @@ nav:
       - Attribution engines: api/attribution.md
       - Policies: api/policy.md
       - Plugins: api/plugins.md
+      - Testing: api/testing.md
   - Operations:
       - Security: operations/security.md
       - Troubleshooting: operations/troubleshooting.md

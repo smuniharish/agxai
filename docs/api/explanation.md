@@ -6,14 +6,14 @@ Engines that render an `Explanation` from a policy-filtered
 [LLM-phrased explanations](../how-to/llm-explanations.md).
 
 ```python
-from langgraph_xai import ExplanationEngine, LLMExplanationEngine, XAIConfig, XAIRuntime
+from agxai import ExplanationEngine, LLMExplanationEngine, XAIConfig, XAIRuntime
 
-xai = XAIRuntime(XAIConfig(llm_explanation_enabled=True))
-xai.register(ExplanationEngine, LLMExplanationEngine(chat_model, enabled=True))
+runtime = XAIRuntime(XAIConfig(llm_explanation_enabled=True))
+runtime.register(ExplanationEngine, LLMExplanationEngine(chat_model, enabled=True))
 ```
 
-::: langgraph_xai.explanation.engines.StructuredExplanationEngine
+::: agxai.explanation.engines.StructuredExplanationEngine
 
-::: langgraph_xai.explanation.engines.LLMExplanationEngine
+::: agxai.explanation.engines.LLMExplanationEngine
 
-::: langgraph_xai.explanation.engines.ExplanationDraft
+::: agxai.explanation.engines.ExplanationDraft

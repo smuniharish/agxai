@@ -4,7 +4,7 @@ One recorded underwriting decision is explained for every combination of two
 exposure policies, the four built-in audiences, and both explanation engines.
 Every row is checked against its policy, so a disclosure regression makes the
 script fail. Source:
-[`examples/explanation_disclosure_matrix.py`](https://github.com/smuniharish/langgraph-xai/blob/master/examples/explanation_disclosure_matrix.py).
+[`examples/explanation_disclosure_matrix.py`](https://github.com/smuniharish/agxai/blob/master/examples/explanation_disclosure_matrix.py).
 
 ```bash
 uv run python examples/explanation_disclosure_matrix.py

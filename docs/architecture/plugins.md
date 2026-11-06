@@ -1,5 +1,16 @@
 # Extensibility
 
+## Agent frameworks
+
+The core has no framework dependency. Subclass the `FrameworkInstrumentor`
+ABC and implement `instrument(target)`, using its `capture()` or
+`capture_sync()` helpers to manage runs and context. `LangGraphInstrumentor`
+implements the bundled LangGraph/LangChain integration in the `langgraph`
+extra. Agno, CrewAI, and others can be connected by developer-written
+instrumentors; see [Custom frameworks](../integrations/custom-frameworks.md).
+
+## Runtime providers
+
 Every capability of the runtime has a small, typed contract and a working
 default. Storage is an abstract base class, `ProvenanceStore`: a store
 subclasses it and inherits the lineage walk. Every other capability is a
@@ -14,7 +25,7 @@ runtime.
 
 | Protocol | Methods | Built-in providers |
 | --- | --- | --- |
-| `ProvenanceStore` | Abstract base class: `write`, `get`, `query`, `parents`, `children` to implement; `lineage` and `close` inherited | `InMemoryProvenanceStore` (default); a [PostgreSQL store](../examples/postgres-store.md) in the examples |
+| `ProvenanceStore` | Abstract base class: `write`, `get`, `query`, `parents`, `children`, `delete_run` to implement; `lineage` and `close` inherited; checked by `agxai.testing.ProvenanceStoreContract` | `InMemoryProvenanceStore` (default); a [PostgreSQL store](../examples/postgres-store.md) in the examples |
 | `ObservabilityProvider` | `emit`, `flush`, `close` | `NoOpObservability` (default), `LangSmithObservability`, `LangfuseObservability`, `OpenTelemetryObservability` |
 | `CapturePolicy` | `evaluate(event)` | `DefaultCapturePolicy` (default) |
 | `PolicyProvider` | `evaluate(context, action)` | `DefaultPolicyProvider` (default) |
@@ -22,9 +33,9 @@ runtime.
 | `ExplanationEngine` | `requires_llm`, `explain(context)` | `StructuredExplanationEngine` (default), `LLMExplanationEngine` |
 
 Every method is `async`. Register a provider with
-`xai.register(Capability, provider)`, which checks that the provider is a
+`runtime.register(Capability, provider)`, which checks that the provider is a
 `ProvenanceStore` subclass or implements the protocol, and replaces the
-previous one. `xai.registry.require(Capability)` returns the active provider.
+previous one. `runtime.registry.require(Capability)` returns the active provider.
 
 A runtime's registry is its own. To share providers between runtimes, for
 example one store for several tenants' runtimes, register the same provider
@@ -54,10 +65,10 @@ class Archive:
         pass
 
 
-xai = XAIRuntime(plugins=(Archive(),))
+runtime = XAIRuntime(plugins=(Archive(),))
 ```
 
-Add plugins at construction or later with `xai.plugins.add(plugin)`. Every
+Add plugins at construction or later with `runtime.plugins.add(plugin)`. Every
 plugin receives every call, even when another plugin fails. The failures are
 then raised together, as an `ExceptionGroup` if there are several, and handled
 by the failure mode once. Plugins are closed in reverse registration order.
@@ -67,11 +78,13 @@ by the failure mode once. Plugins are closed in reverse registration order.
 Keep these contracts, and the runtime's guarantees hold for your provider too:
 
 - **Stores** subclass `ProvenanceStore` and make writes idempotent upserts
-  keyed by record type and ID. An `Execution` is written several times per run,
-  and the latest write must win. Queries must be scoped by application and
-  tenant, provenance queries also by run, and results must come back in a
-  stable order. The inherited `lineage` then behaves like the built-in store's;
-  see [Storage](storage.md).
+  keyed by application, tenant, run, record type, and ID. An `Execution` is
+  written several times per run, and the latest write must win. Queries must be
+  scoped by application and tenant; `get`, provenance queries, and
+  `delete_run` also by run; and results must come back in a stable order. The
+  inherited `lineage` then behaves like the built-in store's. Run
+  `agxai.testing.ProvenanceStoreContract` against the store to prove it; see
+  [Storage](storage.md#testing-a-store).
 - **Observability providers** should not block the event loop. Run blocking SDK
   calls in a thread, or use the SDK's background batching. Subclassing
   `ObservabilityAdapter` gives you deduplication, closed-state checks, and

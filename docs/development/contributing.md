@@ -2,14 +2,14 @@
 
 Contributions are welcome. The full guide, including how to propose changes and
 what a pull request needs, is
-[CONTRIBUTING.md](https://github.com/smuniharish/langgraph-xai/blob/master/CONTRIBUTING.md)
+[CONTRIBUTING.md](https://github.com/smuniharish/agxai/blob/master/CONTRIBUTING.md)
 in the repository.
 
 ## Set up
 
 ```bash
-git clone https://github.com/smuniharish/langgraph-xai.git
-cd langgraph-xai
+git clone https://github.com/smuniharish/agxai.git
+cd agxai
 uv sync --all-extras --all-groups
 ```
 
@@ -19,7 +19,7 @@ uv sync --all-extras --all-groups
 uv run ruff check .
 uv run ruff format --check .
 uv run pyrefly check
-uv run pytest --cov=langgraph_xai --cov-branch
+uv run pytest --cov=agxai --cov-branch
 uv run mkdocs build --strict
 node scripts/render-diagrams.mjs --check
 ```

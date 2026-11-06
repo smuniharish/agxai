@@ -1,6 +1,6 @@
 import pytest
 
-from langgraph_xai import ObservabilityProvider, ProvenanceStore, Registry
+from agxai import ObservabilityProvider, ProvenanceStore, Registry
 from tests.helpers import RecordingObservability
 
 

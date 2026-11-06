@@ -5,12 +5,12 @@ out, a custom policy has a bug. `XAIConfig.failure_mode` decides whether such a
 failure may affect your graph.
 
 ```python
-xai = XAIRuntime(XAIConfig(failure_mode=FailureMode.FAIL_CLOSED))
+runtime = XAIRuntime(XAIConfig(failure_mode=FailureMode.FAIL_CLOSED))
 ```
 
 ## The three modes, side by side
 
-The [failure modes example](https://github.com/smuniharish/langgraph-xai/blob/master/examples/failure_modes.py)
+The [failure modes example](https://github.com/smuniharish/agxai/blob/master/examples/failure_modes.py)
 runs the same one-node graph against a store whose backend is down:
 
 ```python
@@ -36,7 +36,7 @@ runtime.errors holds 1 error(s); first: ConnectionError('storage backend unavail
 ```
 
 - **`fail_open`**: the graph returned its normal result. Each of the six failed
-  writes was kept in `xai.errors`: the execution at start and at finish, and
+  writes was kept in `runtime.errors`: the execution at start and at finish, and
   four events.
 - **`fail_closed`**: the first failed write, the execution record at the start
   of the run, raised `XAIInstrumentationError` from the graph call. The cause
@@ -67,7 +67,7 @@ the policy.
 
 | Situation | Mode |
 | --- | --- |
-| Explainability supports the product but must never take it down | `fail_open`, and alert on `xai.errors` |
+| Explainability supports the product but must never take it down | `fail_open`, and alert on `runtime.errors` |
 | An action may not happen without its audit record, as in regulated approvals | `fail_closed` |
 | Records must never be dropped silently, as in a test suite or audit pipeline | `strict` |
 
@@ -76,15 +76,28 @@ boundary, because configuration is per runtime.
 
 ## Monitoring fail-open
 
-`xai.errors` holds the 100 most recent failures, oldest first, in every mode.
-Export its length as a metric or log new entries after each call:
+In `fail_open` mode every swallowed failure is also logged as a `WARNING`,
+with its traceback, on the `agxai.runtime.runtime` logger. `agxai` installs
+only a `NullHandler`, so the records reach your handlers through standard
+`logging` configuration:
 
 ```python
-errors_before = len(xai.errors)
-result = await graph.ainvoke(payload)
-for error in xai.errors[errors_before:]:
-    logger.warning("explainability failure: %r", error)
+import logging
+
+logging.getLogger("agxai").setLevel(logging.WARNING)
 ```
 
-Once 100 failures are held, the oldest are dropped. For exact counting,
-monitor the store and exporter themselves.
+`fail_closed` and `strict` raise instead of logging, so a failure is reported
+once, by the exception.
+
+`runtime.errors` holds the 100 most recent failures, oldest first, in every mode.
+Export its length as a metric, or inspect new entries after each call:
+
+```python
+errors_before = len(runtime.errors)
+result = await graph.ainvoke(payload)
+failures = runtime.errors[errors_before:]
+```
+
+Once 100 failures are held, the oldest are dropped. For exact counting, count
+the log records or monitor the store and exporter themselves.

@@ -1,6 +1,6 @@
 # Concepts
 
-`langgraph-xai` describes every run with a small set of typed records. Each
+`agxai` describes every run with a small set of typed records. Each
 answers one question:
 
 | Record | Question it answers | Produced by |
@@ -25,7 +25,7 @@ took, how the state changed, which tools and retrievers were called, and where
 a human paused or resumed the run. Your code records **the basis of a
 decision**: the evidence it used and the action it chose.
 
-`langgraph-xai` never records or infers a model's private reasoning
+`agxai` never records or infers a model's private reasoning
 ("chain of thought"). An explanation is built only from recorded facts, so
 every statement in it can be traced back to a record.
 

@@ -16,7 +16,7 @@ def human_review(state: WireTransfer) -> WireTransfer:
     return {"approved": bool(approved)}
 
 
-graph = xai.instrument(builder.compile(checkpointer=InMemorySaver()))
+graph = runtime.instrument(builder.compile(checkpointer=InMemorySaver()))
 thread = {"configurable": {"thread_id": "wire-42"}}
 
 paused = await graph.ainvoke({"amount": 9000.0}, thread)  # pauses at interrupt()
@@ -44,7 +44,7 @@ records of both runs.
 ## How runs are linked
 
 Each instrumented call passes its run ID to the graph in config metadata, under
-`RUN_ID_METADATA_KEY` (`"langgraph_xai_run_id"`). LangGraph copies it into the
+`RUN_ID_METADATA_KEY` (`"agxai_run_id"`). LangGraph copies it into the
 metadata of every checkpoint the run writes. When a call continues a thread,
 the runtime reads the checkpoint it starts from and sets `continuation_of` to
 the run that wrote it. Because the link lives in the checkpoint, it holds across
@@ -88,7 +88,7 @@ and once more before a call that continues a thread, plus once per state edit
 it follows back. To skip the reads, set `capture_checkpoints=False`:
 
 ```python
-xai = XAIRuntime(XAIConfig(capture_checkpoints=False))
+runtime = XAIRuntime(XAIConfig(capture_checkpoints=False))
 ```
 
 Interrupts raised with `interrupt()` and answers passed to `Command(resume=...)`
@@ -96,7 +96,7 @@ are still recorded. Checkpoint records, `continuation_of`, and static
 breakpoints need the state reads: without them, a run that stops at a
 breakpoint is recorded as `completed`. To link checkpoints yourself, for example
 from a system that is not a LangGraph checkpointer, call
-`xai.record_checkpoint(checkpoint_id, parent_checkpoint_id=..., restored=..., run=run)`.
+`runtime.record_checkpoint(checkpoint_id, parent_checkpoint_id=..., restored=..., run=run)`.
 
 ## Record approvals made outside the graph
 
@@ -104,7 +104,7 @@ When a decision is approved in another system, such as a case-management tool,
 record it on the run it belongs to:
 
 ```python
-await xai.record_human_interaction(
+await runtime.record_human_interaction(
     HumanInteractionType.APPROVAL,
     actor_reference="reviewer:ana.lopez",
     response_reference="case-tool://cases/8841/approval",

@@ -6,11 +6,11 @@ Following links backwards from a decision leads to the original data it rests
 on.
 
 ```python
-await xai.record_provenance(
+await runtime.record_provenance(
     "bank-api://accounts/4471/transactions/8841", "transaction://8841", "PRODUCED_BY"
 )
-await xai.record_provenance("transaction://8841", score.id, "DERIVED_FROM")
-await xai.record_provenance(score.id, decision.id, "SUPPORTED_BY")
+await runtime.record_provenance("transaction://8841", score.id, "DERIVED_FROM")
+await runtime.record_provenance(score.id, decision.id, "SUPPORTED_BY")
 ```
 
 ![A decision's lineage, as walked by store.lineage](../assets/diagrams/provenance-flow.png)
@@ -42,12 +42,12 @@ context's application, tenant, and run, so links from other tenants or runs are
 never returned.
 
 ```python
-store = xai.registry.require(ProvenanceStore)
+store = runtime.registry.require(ProvenanceStore)
 lineage = await store.lineage(str(decision.id), context=run.execution.context)
 ```
 
 Real output of that walk, from the
-[canonical model gallery](https://github.com/smuniharish/langgraph-xai/blob/master/examples/canonical_model_gallery.py):
+[canonical model gallery](https://github.com/smuniharish/agxai/blob/master/examples/canonical_model_gallery.py):
 
 ```json
 {

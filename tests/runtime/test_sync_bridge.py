@@ -4,8 +4,8 @@ import threading
 
 import pytest
 
-from langgraph_xai import XAIRuntime
-from langgraph_xai.runtime import runtime as runtime_module
+from agxai import XAIRuntime
+from agxai.runtime import runtime as runtime_module
 
 marker: contextvars.ContextVar[str] = contextvars.ContextVar("marker", default="unset")
 
@@ -23,11 +23,11 @@ async def fail() -> None:
 
 
 def test_run_sync_reuses_one_loop_per_thread() -> None:
-    xai = XAIRuntime()
+    runtime = XAIRuntime()
 
-    first, second = xai.run_sync(current_loop()), xai.run_sync(current_loop())
+    first, second = runtime.run_sync(current_loop()), runtime.run_sync(current_loop())
     other: list[asyncio.AbstractEventLoop] = []
-    thread = threading.Thread(target=lambda: other.append(xai.run_sync(current_loop())))
+    thread = threading.Thread(target=lambda: other.append(runtime.run_sync(current_loop())))
     thread.start()
     thread.join()
 
@@ -36,40 +36,40 @@ def test_run_sync_reuses_one_loop_per_thread() -> None:
 
 
 def test_run_sync_propagates_context_variables_and_errors() -> None:
-    xai = XAIRuntime()
+    runtime = XAIRuntime()
     token = marker.set("caller")
     try:
-        assert xai.run_sync(read_marker()) == "caller"
+        assert runtime.run_sync(read_marker()) == "caller"
     finally:
         marker.reset(token)
 
     with pytest.raises(LookupError, match="boom"):
-        xai.run_sync(fail())
+        runtime.run_sync(fail())
 
 
 async def test_run_sync_inside_a_running_loop_reuses_one_helper_loop_per_thread() -> None:
-    xai = XAIRuntime()
+    runtime = XAIRuntime()
     token = marker.set("async-caller")
     try:
-        assert xai.run_sync(read_marker()) == "async-caller"
-        helper = xai.run_sync(current_loop())
+        assert runtime.run_sync(read_marker()) == "async-caller"
+        helper = runtime.run_sync(current_loop())
         assert helper is not asyncio.get_running_loop()
-        assert xai.run_sync(current_loop()) is helper
+        assert runtime.run_sync(current_loop()) is helper
         with pytest.raises(LookupError, match="boom"):
-            xai.run_sync(fail())
+            runtime.run_sync(fail())
     finally:
         marker.reset(token)
 
 
 async def test_run_sync_can_be_nested_inside_the_helper_loop() -> None:
-    xai = XAIRuntime()
+    runtime = XAIRuntime()
 
     async def nested() -> str:
-        return xai.run_sync(read_marker())
+        return runtime.run_sync(read_marker())
 
     token = marker.set("outer")
     try:
-        assert xai.run_sync(nested()) == "outer"
+        assert runtime.run_sync(nested()) == "outer"
     finally:
         marker.reset(token)
 
@@ -104,14 +104,14 @@ def test_thread_loops_are_closed_when_released() -> None:
 
 
 def test_exit_tolerates_tokens_from_another_context() -> None:
-    xai = XAIRuntime()
-    run = xai.run_sync(xai.start_run())
-    tokens = contextvars.copy_context().run(xai._enter, run)
+    runtime = XAIRuntime()
+    run = runtime.run_sync(runtime.start_run())
+    tokens = contextvars.copy_context().run(runtime._enter, run)
 
-    xai._exit(tokens)
-    tokens = xai._enter(run)
-    xai._exit(tokens)
-    xai._exit(tokens)
+    runtime._exit(tokens)
+    tokens = runtime._enter(run)
+    runtime._exit(tokens)
+    runtime._exit(tokens)
 
-    assert xai.current_run is None
-    assert not xai._is_instrumenting()
+    assert runtime.current_run is None
+    assert not runtime._is_instrumenting()

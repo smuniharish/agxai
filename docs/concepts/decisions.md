@@ -6,7 +6,7 @@ choice, and the evidence behind them. It is recorded explicitly, in the node
 where the choice is made:
 
 ```python
-decision = await xai.record_decision(
+decision = await runtime.record_decision(
     "HUMAN_REVIEW",
     decision_type=DecisionType.ROUTING,
     candidate_actions=["AUTO_APPROVE", "HUMAN_REVIEW", "AUTO_DECLINE"],
@@ -35,7 +35,7 @@ decision = await xai.record_decision(
 
 ## Recorded decision
 
-From the [canonical model gallery](https://github.com/smuniharish/langgraph-xai/blob/master/examples/canonical_model_gallery.py)
+From the [canonical model gallery](https://github.com/smuniharish/agxai/blob/master/examples/canonical_model_gallery.py)
 (context omitted):
 
 ```json
@@ -83,10 +83,10 @@ registered plugins. To explain one after the graph call returns, keep the run
 with `collect_runs` and pass both to `explain_decision`:
 
 ```python
-with xai.collect_runs() as runs:
+with runtime.collect_runs() as runs:
     await graph.ainvoke(payload)
 (run,) = runs
-explanation = await xai.explain_decision(run.decisions[-1], audience=Audience.AUDITOR, run=run)
+explanation = await runtime.explain_decision(run.decisions[-1], audience=Audience.AUDITOR, run=run)
 ```
 
 `explain_decision` gathers the evidence the decision and its factors reference

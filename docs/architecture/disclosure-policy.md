@@ -1,6 +1,6 @@
 # Disclosure policy
 
-`langgraph-xai` controls information at two boundaries: what is **recorded**,
+`agxai` controls information at two boundaries: what is **recorded**,
 and what is **disclosed** in an explanation. This page describes both
 pipelines, and what they do and do not protect.
 
@@ -62,9 +62,10 @@ pipelines, and what they do and do not protect.
   capture policy excludes it.
 - **Secure the backends.** Access control, encryption at rest, and retention in
   your database and tracing tools remain your responsibility.
-- **Enforce retention.** How long records are kept, and when they are
-  deleted, is decided by your store and database. The runtime evaluates
-  capture (`PolicyAction.CAPTURE`) and exposure (`PolicyAction.EXPOSE`)
-  policies only.
+- **Enforce retention.** How long records are kept is your decision. Erase one
+  run with `await store.delete_run(context)`, from an erasure request or a
+  retention job; see [Storage](storage.md#the-base-class). The runtime
+  evaluates capture (`PolicyAction.CAPTURE`) and exposure
+  (`PolicyAction.EXPOSE`) policies only, and never deletes records itself.
 
 See [Security](../operations/security.md) for deployment guidance.

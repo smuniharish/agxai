@@ -5,13 +5,15 @@ flowchart LR
 
     subgraph Application["Your application"]
         compiled["Compiled LangGraph graph<br/>StateGraph · create_agent · deepagents"]:::app
+        custom["Your framework<br/>Agno · CrewAI · custom agents"]:::app
         code["Your nodes, tools,<br/>and middleware"]:::app
     end
 
-    subgraph XAI["langgraph-xai"]
+    subgraph XAI["agxai"]
         proxy["InstrumentedGraph<br/>invoke · stream · batch<br/>sync and async"]:::core
         callbacks["Callback handlers<br/>nodes · state · tools · retrievers"]:::core
         runtime["XAIRuntime<br/>runs · canonical artifacts<br/>failure mode"]:::core
+        adapter["FrameworkInstrumentor ABC<br/>your adapter: capture / capture_sync"]:::core
         explain["explain_decision"]:::core
     end
 
@@ -27,7 +29,8 @@ flowchart LR
         engine["ExplanationEngine"]:::provider
     end
 
-    compiled -- "xai.instrument" --> proxy --> callbacks --> runtime
+    compiled -- "runtime.instrument" --> proxy --> callbacks --> runtime
+    custom --> adapter --> runtime
     code -- "record_evidence<br/>record_decision" --> runtime
     runtime -- "evidence, decisions" --> plugins
     runtime -- "canonical events" --> capture -- "allowed" --> sinks

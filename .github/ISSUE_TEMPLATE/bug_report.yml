@@ -1,5 +1,5 @@
 name: Bug report
-description: Report a problem with langgraph-xai
+description: Report a problem with agxai
 labels: ["bug"]
 body:
   - type: markdown
@@ -12,8 +12,8 @@ body:
   - type: input
     id: version
     attributes:
-      label: langgraph-xai version
-      description: Output of `python -c "import langgraph_xai; print(langgraph_xai.__version__)"`, if available, or the pinned version in your lockfile.
+      label: agxai version
+      description: Output of `python -c "import agxai; print(agxai.__version__)"`, if available, or the pinned version in your lockfile.
       placeholder: "0.1.0"
     validations:
       required: true

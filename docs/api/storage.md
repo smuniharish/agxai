@@ -7,14 +7,14 @@ subclass the [`ProvenanceStore`](protocols.md#storage) base class; the
 [Storage architecture](../architecture/storage.md).
 
 ```python
-from langgraph_xai import Execution, ProvenanceStore, StoreFilter
+from agxai import Execution, ProvenanceStore, StoreFilter
 
-store = xai.registry.require(ProvenanceStore)
+store = runtime.registry.require(ProvenanceStore)
 query = StoreFilter(application_id="payments", tenant_id="acme-bank", item_type=Execution)
 async for execution in store.query(query):
     print(execution.context.run_id, execution.status)
 ```
 
-::: langgraph_xai.storage.memory.InMemoryProvenanceStore
+::: agxai.storage.memory.InMemoryProvenanceStore
 
-::: langgraph_xai.storage.memory.StoreFilter
+::: agxai.storage.memory.StoreFilter

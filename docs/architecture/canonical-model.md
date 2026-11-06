@@ -1,6 +1,6 @@
 # Canonical model
 
-Every record `langgraph-xai` produces is a canonical model: a Pydantic v2 model
+Every record `agxai` produces is a canonical model: a Pydantic v2 model
 whose JSON form is a stable, versioned contract. Stores persist it,
 observability adapters export it, and explanation engines read it. This page
 lists the models and the rules they follow. [Concepts](../concepts/index.md)
@@ -36,7 +36,7 @@ same JSON.
 | `ToolExecution` | One tool call: name, call ID, status, latency, input and output references |
 | `RetrievalExecution` / `RetrievedDocument` | One retriever call and its ranked documents |
 | `MemoryReference` | A long-term memory read or write, by reference |
-| `CheckpointReference` | A LangGraph checkpoint linked to the run |
+| `CheckpointReference` | A framework checkpoint linked to the run |
 | `HumanInteraction` | An interrupt, resume, approval, rejection, or edit |
 | `ExceptionEvent` | An error that failed or cancelled the run |
 
@@ -84,7 +84,7 @@ without forking the schema.
 | `AttributionResult`, `Explanation`, `PolicyDecision` | No; returned to the caller | No | No | Through `record_artifact` |
 
 To keep explanations, attributions, or policy decisions, pass them to
-`xai.record_artifact(...)`, which delivers them to plugins like any other
+`runtime.record_artifact(...)`, which delivers them to plugins like any other
 semantic record.
 
 ## Compatibility
@@ -105,5 +105,5 @@ When you upgrade:
   release can fail validation in an older one. Upgrade the services that read
   records before, or together with, the services that write them.
 - Records written by 0.1.0 (schema `"1.0.0"`) are not readable by 1.x. The
-  [changelog](https://github.com/smuniharish/langgraph-xai/blob/master/CHANGELOG.md)
+  [changelog](https://github.com/smuniharish/agxai/blob/master/CHANGELOG.md)
   lists every field that changed.

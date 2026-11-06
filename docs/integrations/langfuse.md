@@ -1,17 +1,17 @@
 # Langfuse
 
-`LangfuseObservability` records each `langgraph-xai` event as a
+`LangfuseObservability` records each `agxai` event as a
 [Langfuse](https://langfuse.com) observation, grouped into one trace per run.
-It requires the Langfuse Python SDK v4 or newer.
+It requires the Langfuse Python SDK v5.
 
 ```bash
-pip install "langgraph-xai[langfuse]"
+pip install "agxai[langfuse]"
 ```
 
 ```python
-from langgraph_xai import LangfuseObservability, ObservabilityProvider
+from agxai import LangfuseObservability, ObservabilityProvider
 
-xai.register(ObservabilityProvider, LangfuseObservability())
+runtime.register(ObservabilityProvider, LangfuseObservability())
 ```
 
 Without a `client`, the adapter uses `langfuse.get_client()`, which reads
@@ -42,5 +42,17 @@ attribute, and the run ID groups the events.
 
 ## Lifecycle
 
-`await xai.flush()` flushes the Langfuse client. `await xai.close()` also shuts
+`await runtime.flush()` flushes the Langfuse client. `await runtime.close()` also shuts
 it down if the adapter created it. A client you pass in is never shut down.
+
+## Overhead
+
+Each event is one `create_event` call on the event loop. The Langfuse client
+only enqueues the span and exports it from its own background thread, so the
+call is short: with Langfuse 5.2 on a development laptop it held the loop for
+about 0.12 ms at the median and 0.4 ms at p95. A round trip through
+`asyncio.to_thread` measured 0.13 ms at the median on the same machine, so
+moving the call to a worker thread would not make an event cheaper, and the
+adapter calls it inline. Measure
+your own environment with `scripts/benchmark_overhead.py`; see
+[Testing](../development/testing.md#measuring-overhead).

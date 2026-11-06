@@ -13,17 +13,17 @@ LLM explanations need two explicit opt-ins: the engine is constructed with
 Credentials in the environment never enable anything on their own.
 
 ```bash
-pip install "langgraph-xai[llm-openai]"
+pip install "agxai[llm-openai]"
 ```
 
 ```python
 from langchain_openai import ChatOpenAI
 
-from langgraph_xai import ExplanationEngine, LLMExplanationEngine, XAIConfig, XAIRuntime
+from agxai import ExplanationEngine, LLMExplanationEngine, XAIConfig, XAIRuntime
 
 model = ChatOpenAI(model="gpt-4o-mini", temperature=0)
-xai = XAIRuntime(XAIConfig(llm_explanation_enabled=True, operation_timeout_seconds=60))
-xai.register(ExplanationEngine, LLMExplanationEngine(model, enabled=True, timeout=45))
+runtime = XAIRuntime(XAIConfig(llm_explanation_enabled=True, operation_timeout_seconds=60))
+runtime.register(ExplanationEngine, LLMExplanationEngine(model, enabled=True, timeout=45))
 ```
 
 Any LangChain chat model works, including OpenAI-compatible gateways via
@@ -101,17 +101,17 @@ structured engine. The model cannot alter them.
 
 A timeout, a provider error, or an invalid reply raises
 `XAIInstrumentationError` from `explain` and `explain_decision`, in every
-failure mode. The cause is kept in `xai.errors`. To fall back to the
+failure mode. The cause is kept in `runtime.errors`. To fall back to the
 deterministic text, explain again with a runtime that shares the policy and
 attribution providers but keeps the default structured engine:
 
 ```python
 try:
-    explanation = await xai.explain_decision(decision, audience=audience, run=run)
+    explanation = await runtime.explain_decision(decision, audience=audience, run=run)
 except XAIInstrumentationError:
     fallback = XAIRuntime()
-    fallback.register(PolicyProvider, xai.registry.require(PolicyProvider))
-    fallback.register(AttributionEngine, xai.registry.require(AttributionEngine))
+    fallback.register(PolicyProvider, runtime.registry.require(PolicyProvider))
+    fallback.register(AttributionEngine, runtime.registry.require(AttributionEngine))
     explanation = await fallback.explain_decision(decision, audience=audience, run=run)
 ```
 

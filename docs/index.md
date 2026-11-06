@@ -1,20 +1,21 @@
-# langgraph-xai
+# agxai
 
-**Explainability for LangGraph applications: what ran, why it was decided, and
+**Explainability for AI agents: what ran, why it was decided, and
 what each audience may see.**
 
-`langgraph-xai` wraps a compiled LangGraph graph and records every run as
-structured, versioned artifacts. Nodes, state changes, tools, retrievers, and
-human-in-the-loop interrupts are captured automatically. Your code records the
+`agxai` is a framework-agnostic explainability runtime. Its core needs only
+Pydantic, not an agent framework. The optional LangGraph/LangChain integration
+captures nodes, state changes, tools, retrievers, and human-in-the-loop
+interrupts automatically. Your code records the
 evidence it relied on and the decisions it made. From those records the
 runtime builds explanations for developers, auditors, business owners, or end
 users, filtered by a disclosure policy you control.
 
-![langgraph-xai architecture](assets/diagrams/architecture-overview.png)
+![agxai architecture](assets/diagrams/architecture-overview.png)
 
 ## What you get
 
-- **Automatic execution capture.** `xai.instrument(graph)` returns a drop-in
+- **Optional LangGraph/LangChain capture.** `runtime.instrument(graph)` returns a drop-in
   wrapper that records `invoke`, `stream`, `batch`, `astream_events`, and the
   other Runnable entry points, sync and async. Inputs, outputs, and exceptions
   are unchanged.
@@ -35,20 +36,27 @@ users, filtered by a disclosure policy you control.
   `ProvenanceStore` to keep them in your database (a complete PostgreSQL store
   is included as an example). Forward events to LangSmith, Langfuse, or any
   OpenTelemetry backend. Extend everything through small, typed contracts.
+- **Framework extensibility.** Subclass `FrameworkInstrumentor` to connect Agno,
+  CrewAI, or another framework using the same recording and explanation runtime.
+  See [Custom frameworks](integrations/custom-frameworks.md); these are
+  developer-written integrations, not bundled adapters.
 
-## Thirty seconds
+## Thirty seconds with LangGraph
+
+Install `pip install "agxai[langgraph]"` for this example. For a framework-free
+example, see [Custom framework](examples/custom-framework.md).
 
 ```python
-from langgraph_xai import Audience, XAIRuntime
+from agxai import Audience, XAIRuntime
 
-xai = XAIRuntime(application_id="payments", tenant_id="acme-bank")
-graph = xai.instrument(builder.compile())
+runtime = XAIRuntime(application_id="payments", tenant_id="acme-bank")
+graph = runtime.instrument(builder.compile())
 
-with xai.collect_runs() as runs:
+with runtime.collect_runs() as runs:
     result = await graph.ainvoke({"amount": 9200.0})
 
 (run,) = runs
-explanation = await xai.explain_decision(run.decisions[0], audience=Audience.AUDITOR, run=run)
+explanation = await runtime.explain_decision(run.decisions[0], audience=Audience.AUDITOR, run=run)
 print(explanation.summary)  # The routing decision selected 'HUMAN_REVIEW'.
 ```
 
@@ -57,10 +65,10 @@ The [quickstart](getting-started/quickstart.md) builds this graph step by step.
 ## How it relates to tracing tools
 
 LangSmith, Langfuse, and OpenTelemetry show **what ran**: run trees, spans,
-latency, tokens. `langgraph-xai` records **why it was decided** and **who may
+latency, tokens. `agxai` records **why it was decided** and **who may
 see the explanation**. The two work together: the bundled adapters send
-`langgraph-xai` events to the tracing backend you already use. See
-[LangSmith and langgraph-xai](integrations/langsmith-vs-langgraph-xai.md).
+`agxai` events to the tracing backend you already use. See
+[LangSmith and agxai](integrations/langsmith-vs-agxai.md).
 
 ## Where to go next
 
@@ -77,7 +85,7 @@ see the explanation**. The two work together: the bundled adapters send
 
 ## Status
 
-`langgraph-xai` 1.0 is stable. The public API and the record schema follow
+`agxai` 1.0 is stable. The public API and the record schema follow
 semantic versioning: minor releases add features without breaking your code or
 your stored records.
 
@@ -86,4 +94,4 @@ and branch coverage and property-based tests. The integrations are exercised
 against an OpenTelemetry Collector, an OpenAI-compatible LLM endpoint, and the
 real LangSmith and Langfuse SDKs, and the PostgreSQL store example against a
 real PostgreSQL server. Changes are listed in the
-[changelog](https://github.com/smuniharish/langgraph-xai/blob/master/CHANGELOG.md).
+[changelog](https://github.com/smuniharish/agxai/blob/master/CHANGELOG.md).

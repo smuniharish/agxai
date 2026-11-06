@@ -15,8 +15,8 @@ import uuid
 
 import pytest
 
-from langgraph_xai.core import ExecutionStartedEvent
-from langgraph_xai.observability import LangfuseObservability
+from agxai.core import ExecutionStartedEvent
+from agxai.observability import LangfuseObservability
 from tests.helpers import context
 
 pytestmark = pytest.mark.live

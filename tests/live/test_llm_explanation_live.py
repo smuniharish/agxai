@@ -12,8 +12,8 @@ import os
 
 import pytest
 
-from langgraph_xai import DecisionFactor, LLMExplanationEngine, XAIConfig, XAIRuntime
-from langgraph_xai.core import ExplanationEngine
+from agxai import DecisionFactor, LLMExplanationEngine, XAIConfig, XAIRuntime
+from agxai.core import ExplanationEngine
 
 pytestmark = pytest.mark.live
 
@@ -33,17 +33,17 @@ async def test_llm_explanation_is_grounded_in_the_recorded_decision() -> None:
             api_key=api_key,
             http_async_client=http_client,
         )
-        xai = XAIRuntime(config=XAIConfig(llm_explanation_enabled=True))
-        xai.register(ExplanationEngine, LLMExplanationEngine(model, enabled=True, timeout=60))
-        run = await xai.start_run()
-        decision = await xai.record_decision(
+        runtime = XAIRuntime(config=XAIConfig(llm_explanation_enabled=True))
+        runtime.register(ExplanationEngine, LLMExplanationEngine(model, enabled=True, timeout=60))
+        run = await runtime.start_run()
+        decision = await runtime.record_decision(
             "HUMAN_REVIEW",
             decision_type="routing",
             factors=[DecisionFactor(name="fraud_risk_score", value=0.91)],
             run=run,
         )
 
-        explanation = await xai.explain_decision(decision, audience="end_user", run=run)
+        explanation = await runtime.explain_decision(decision, audience="end_user", run=run)
 
     rendered = f"{explanation.summary} {' '.join(explanation.reasons)}".lower()
     assert explanation.metadata == {"engine": "llm", "validated": True}

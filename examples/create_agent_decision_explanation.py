@@ -22,7 +22,7 @@ from langchain.agents.middleware import AgentMiddleware
 from langchain_core.messages import ToolMessage
 from langchain_core.tools import tool
 
-from langgraph_xai import Audience, DecisionFactor, DecisionType, EvidenceType, XAIRuntime
+from agxai import Audience, DecisionFactor, DecisionType, EvidenceType, XAIRuntime
 
 
 @tool
@@ -34,18 +34,19 @@ def check_fraud_risk(transaction_id: str, amount: float) -> str:
 class DecisionRecorder(AgentMiddleware):
     """When the agent finishes, record its tool results as evidence and decide on escalation."""
 
-    def __init__(self, xai: XAIRuntime, threshold: float = 0.8) -> None:
+    def __init__(self, runtime: XAIRuntime, threshold: float = 0.8) -> None:
         super().__init__()
-        self.xai = xai
+        self.runtime = runtime
         self.threshold = threshold
 
     async def aafter_model(self, state: Any, runtime: Any) -> dict[str, Any] | None:
+        # `runtime` is the agent's LangGraph runtime (injected by name); agxai's is self.runtime.
         messages = state["messages"]
         if getattr(messages[-1], "tool_calls", None):
             return None
         results = [message for message in messages if isinstance(message, ToolMessage)]
         evidence = [
-            await self.xai.record_evidence(
+            await self.runtime.record_evidence(
                 EvidenceType.TOOL_RESULT,
                 summary=f"{message.name} returned {message.text}.",
                 content_reference=f"tool-call://{message.tool_call_id}",
@@ -54,7 +55,7 @@ class DecisionRecorder(AgentMiddleware):
             for message in results
         ]
         score = max((float(message.text) for message in results), default=0.0)
-        await self.xai.record_decision(
+        await self.runtime.record_decision(
             "ESCALATE_FOR_REVIEW" if score >= self.threshold else "NO_ACTION",
             decision_type=DecisionType.ESCALATION,
             candidate_actions=["ESCALATE_FOR_REVIEW", "NO_ACTION"],
@@ -72,16 +73,16 @@ class DecisionRecorder(AgentMiddleware):
 
 
 async def main() -> None:
-    xai = XAIRuntime(graph_id="fraud-assistant")
+    runtime = XAIRuntime(graph_id="fraud-assistant")
     async with chat_model() as model:
         agent = create_agent(
             model,
             tools=[check_fraud_risk],
             system_prompt="You are a fraud review assistant. Use the tool, then answer briefly.",
-            middleware=[DecisionRecorder(xai)],
+            middleware=[DecisionRecorder(runtime)],
         )
-        with xai.collect_runs() as runs:
-            result = await xai.instrument(agent).ainvoke(
+        with runtime.collect_runs() as runs:
+            result = await runtime.instrument(agent).ainvoke(
                 {
                     "messages": [
                         {"role": "user", "content": "Transaction txn-8841 is $9200. Is it risky?"}
@@ -98,7 +99,9 @@ async def main() -> None:
             for item in run.execution.tools
         ],
     )
-    explanation = await xai.explain_decision(run.decisions[-1], audience=Audience.END_USER, run=run)
+    explanation = await runtime.explain_decision(
+        run.decisions[-1], audience=Audience.END_USER, run=run
+    )
     show("Explanation", explanation.model_dump(mode="json", include={"summary", "reasons"}))
 
 

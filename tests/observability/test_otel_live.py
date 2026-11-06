@@ -12,8 +12,8 @@ import os
 
 import pytest
 
-from langgraph_xai.core import ExecutionStartedEvent
-from langgraph_xai.observability import OpenTelemetryObservability
+from agxai.core import ExecutionStartedEvent
+from agxai.observability import OpenTelemetryObservability
 from tests.helpers import context
 
 pytestmark = pytest.mark.live
@@ -28,7 +28,7 @@ async def test_otel_adapter_exports_spans_to_a_collector() -> None:
     from opentelemetry.sdk.trace import TracerProvider
     from opentelemetry.sdk.trace.export import BatchSpanProcessor
 
-    provider = TracerProvider(resource=Resource.create({"service.name": "langgraph-xai-live-test"}))
+    provider = TracerProvider(resource=Resource.create({"service.name": "agxai-live-test"}))
     provider.add_span_processor(
         BatchSpanProcessor(exporter_module.OTLPSpanExporter(endpoint=f"{endpoint}/v1/traces"))
     )

@@ -1,12 +1,13 @@
 # Integrations
 
-`langgraph-xai` instruments LangGraph and plugs into the storage and tracing
+`agxai` provides a framework-neutral core and plugs into the storage and tracing
 systems you already run. Every integration is optional and is installed as an
 extra.
 
 | Integration | Role | Extra | Class |
 | --- | --- | --- | --- |
-| [LangGraph](langgraph.md) | The graphs being explained | (core) | `XAIRuntime.instrument` |
+| [LangGraph / LangChain](langgraph.md) | Built-in automatic capture | `langgraph` | `LangGraphInstrumentor`, `XAIRuntime.instrument` |
+| [Custom frameworks](custom-frameworks.md) | Developer-written Agno, CrewAI, or other adapters | None in agxai; install your framework separately | `FrameworkInstrumentor` ABC |
 | [LangSmith](langsmith.md) | Canonical events as a LangSmith trace | `langsmith` | `LangSmithObservability` |
 | [Langfuse](langfuse.md) | Canonical events as Langfuse observations | `langfuse` | `LangfuseObservability` |
 | [OpenTelemetry](opentelemetry.md) | Canonical events as spans, for any OTLP backend | `otel` | `OpenTelemetryObservability` |
@@ -22,5 +23,5 @@ even if delivery is retried. Every backend receives the same `xai.*`
 correlation attributes, so records can be joined across systems.
 
 New to tracing tools? Start with
-[LangSmith and langgraph-xai](langsmith-vs-langgraph-xai.md), which explains
+[LangSmith and agxai](langsmith-vs-agxai.md), which explains
 how tracing and explainability complement each other.

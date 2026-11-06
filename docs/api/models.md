@@ -4,110 +4,110 @@ Every record is a Pydantic v2 model with a `schema_version`. Unknown fields are
 rejected, numbers must be finite, and timestamps must be timezone-aware. See
 [Canonical model](../architecture/canonical-model.md) for the rules and
 [Concepts](../concepts/index.md) for what each record means. All classes on
-this page are importable from `langgraph_xai.core`; the most common ones are
-also importable from `langgraph_xai`.
+this page are importable from `agxai.core`; the most common ones are
+also importable from `agxai`.
 
 ## Context and execution
 
-::: langgraph_xai.core.models.ExecutionContext
+::: agxai.core.models.ExecutionContext
 
-::: langgraph_xai.core.models.Execution
+::: agxai.core.models.Execution
 
-::: langgraph_xai.core.models.NodeExecution
+::: agxai.core.models.NodeExecution
 
-::: langgraph_xai.core.models.StateTransition
+::: agxai.core.models.StateTransition
 
-::: langgraph_xai.core.models.StateChange
+::: agxai.core.models.StateChange
 
-::: langgraph_xai.core.models.ToolExecution
+::: agxai.core.models.ToolExecution
 
-::: langgraph_xai.core.models.RetrievalExecution
+::: agxai.core.models.RetrievalExecution
 
-::: langgraph_xai.core.models.RetrievedDocument
+::: agxai.core.models.RetrievedDocument
 
-::: langgraph_xai.core.models.MemoryReference
+::: agxai.core.models.MemoryReference
 
-::: langgraph_xai.core.models.CheckpointReference
+::: agxai.core.models.CheckpointReference
 
-::: langgraph_xai.core.models.HumanInteraction
+::: agxai.core.models.HumanInteraction
 
-::: langgraph_xai.core.models.ExceptionEvent
+::: agxai.core.models.ExceptionEvent
 
 ## Decision basis
 
-::: langgraph_xai.core.models.Evidence
+::: agxai.core.models.Evidence
 
-::: langgraph_xai.core.models.SourceReference
+::: agxai.core.models.SourceReference
 
-::: langgraph_xai.core.models.Decision
+::: agxai.core.models.Decision
 
-::: langgraph_xai.core.models.DecisionFactor
+::: agxai.core.models.DecisionFactor
 
-::: langgraph_xai.core.models.ProvenanceLink
+::: agxai.core.models.ProvenanceLink
 
 ## Explanation
 
-::: langgraph_xai.core.models.AttributionResult
+::: agxai.core.models.AttributionResult
 
-::: langgraph_xai.core.models.AttributionContribution
+::: agxai.core.models.AttributionContribution
 
-::: langgraph_xai.core.models.PolicyDecision
+::: agxai.core.models.PolicyDecision
 
-::: langgraph_xai.core.models.ExplanationContext
+::: agxai.core.models.ExplanationContext
 
-::: langgraph_xai.core.models.Explanation
+::: agxai.core.models.Explanation
 
-::: langgraph_xai.core.models.EvidenceReference
+::: agxai.core.models.EvidenceReference
 
 ## Events
 
 `CanonicalEvent` is the union of the event types below, discriminated by
 `event_type`.
 
-::: langgraph_xai.core.models.XAIEvent
+::: agxai.core.models.XAIEvent
 
-::: langgraph_xai.core.models.ExecutionStartedEvent
+::: agxai.core.models.ExecutionStartedEvent
 
-::: langgraph_xai.core.models.ExecutionCompletedEvent
+::: agxai.core.models.ExecutionCompletedEvent
 
-::: langgraph_xai.core.models.ExecutionFailedEvent
+::: agxai.core.models.ExecutionFailedEvent
 
-::: langgraph_xai.core.models.StateTransitionEvent
+::: agxai.core.models.StateTransitionEvent
 
-::: langgraph_xai.core.models.NodeExecutionEvent
+::: agxai.core.models.NodeExecutionEvent
 
-::: langgraph_xai.core.models.ToolExecutionEvent
+::: agxai.core.models.ToolExecutionEvent
 
-::: langgraph_xai.core.models.RetrievalExecutionEvent
+::: agxai.core.models.RetrievalExecutionEvent
 
-::: langgraph_xai.core.models.CheckpointEvent
+::: agxai.core.models.CheckpointEvent
 
-::: langgraph_xai.core.models.InterruptEvent
+::: agxai.core.models.InterruptEvent
 
 ## Enumerations
 
-::: langgraph_xai.core.models.CaptureMode
+::: agxai.core.models.CaptureMode
 
-::: langgraph_xai.core.models.FailureMode
+::: agxai.core.models.FailureMode
 
-::: langgraph_xai.core.models.ExecutionStatus
+::: agxai.core.models.ExecutionStatus
 
-::: langgraph_xai.core.models.ToolStatus
+::: agxai.core.models.ToolStatus
 
-::: langgraph_xai.core.models.DecisionType
+::: agxai.core.models.DecisionType
 
-::: langgraph_xai.core.models.EvidenceType
+::: agxai.core.models.EvidenceType
 
-::: langgraph_xai.core.models.Audience
+::: agxai.core.models.Audience
 
-::: langgraph_xai.core.models.MemoryOperation
+::: agxai.core.models.MemoryOperation
 
-::: langgraph_xai.core.models.HumanInteractionType
+::: agxai.core.models.HumanInteractionType
 
-::: langgraph_xai.core.models.PolicyAction
+::: agxai.core.models.PolicyAction
 
 ## Base classes
 
-::: langgraph_xai.core.models.CanonicalModel
+::: agxai.core.models.CanonicalModel
 
-::: langgraph_xai.core.models.IdentifiedModel
+::: agxai.core.models.IdentifiedModel

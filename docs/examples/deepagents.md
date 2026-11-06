@@ -2,9 +2,9 @@
 
 [`deepagents`](https://github.com/langchain-ai/deepagents) adds planning,
 filesystem, and sub-agent middleware on top of `create_agent`. The result is
-still a compiled LangGraph graph, so the same `xai.instrument` call captures the
+still a compiled LangGraph graph, so the same `runtime.instrument` call captures the
 whole run. Source:
-[`examples/deepagents_agent.py`](https://github.com/smuniharish/langgraph-xai/blob/master/examples/deepagents_agent.py).
+[`examples/deepagents_agent.py`](https://github.com/smuniharish/agxai/blob/master/examples/deepagents_agent.py).
 
 ```bash
 export OPENAI_API_KEY=...
@@ -29,8 +29,8 @@ agent = create_deep_agent(
     ),
 )
 
-with xai.collect_runs() as runs:
-    result = await xai.instrument(agent).ainvoke(
+with runtime.collect_runs() as runs:
+    result = await runtime.instrument(agent).ainvoke(
         {
             "messages": [
                 {

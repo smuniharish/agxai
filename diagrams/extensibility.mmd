@@ -4,6 +4,9 @@ flowchart TB
     classDef impl fill:#ecf8f1,stroke:#2f8f5b,color:#0f2547
 
     runtime["XAIRuntime"]:::core
+    framework["FrameworkInstrumentor<br/>abstract base class"]:::protocol
+    framework --> runtime
+    framework --> frameworks["LangGraphInstrumentor (optional extra)<br/>your Agno / CrewAI / custom adapter"]:::impl
     registry["Registry<br/>register(capability, provider)"]:::core
     runtime --> registry
     runtime --> manager["PluginManager"]:::core

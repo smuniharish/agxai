@@ -7,9 +7,10 @@ from hypothesis import given, settings
 from hypothesis import strategies as st
 from hypothesis.stateful import RuleBasedStateMachine, invariant, rule
 
-from langgraph_xai import Execution, ExecutionStatus, ProvenanceLink
-from langgraph_xai.core import ExecutionStartedEvent
-from langgraph_xai.storage import InMemoryProvenanceStore, StoreFilter
+from agxai import Execution, ExecutionStatus, ProvenanceLink
+from agxai.core import ExecutionStartedEvent
+from agxai.storage import InMemoryProvenanceStore, StoreFilter
+from agxai.testing import ProvenanceStoreContract
 from tests.helpers import context, execution
 
 
@@ -88,28 +89,78 @@ async def test_query_filters_orders_and_paginates() -> None:
     assert await collect(store, StoreFilter(application_id="app", tenant_id="none")) == []
 
 
-async def test_get_returns_isolated_copies_and_detects_ambiguity() -> None:
+async def test_get_returns_isolated_copies_scoped_to_one_run() -> None:
     store = InMemoryProvenanceStore()
     record = execution()
     await store.write(record)
     event = ExecutionStartedEvent(context=context(), sequence=0)
     await store.write(event)
 
-    fetched = await store.get(str(record.id))
+    fetched = await store.get(str(record.id), context=record.context)
     assert fetched == record
     assert fetched is not record
     fetched.metadata["mutated"] = True  # pyrefly: ignore[missing-attribute]
     record.status = ExecutionStatus.FAILED
-    assert await store.get(str(record.id)) == record.model_copy(
+    assert await store.get(str(record.id), context=record.context) == record.model_copy(
         update={"status": ExecutionStatus.COMPLETED}
     )
-    assert await store.get(str(event.id)) == event
-    assert await store.get(str(uuid4())) is None
+    assert await store.get(str(event.id), context=event.context) == event
+    assert await store.get(str(event.id), context=record.context) is None
+    assert await store.get(str(uuid4()), context=record.context) is None
 
-    clash = link("a", "b", id=record.id)
+    clash = link("a", "b", record.context, id=record.id)
     await store.write(clash)
     with pytest.raises(LookupError, match="ambiguous"):
-        await store.get(str(record.id))
+        await store.get(str(record.id), context=record.context)
+
+
+async def test_equal_ids_in_other_tenants_are_kept_apart() -> None:
+    store = InMemoryProvenanceStore()
+    alpha = link("a", "b", context("alpha"))
+    beta = link("a", "b", context("beta"), id=alpha.id)
+    await store.write(alpha)
+    await store.write(beta)
+
+    assert await store.get(str(alpha.id), context=alpha.context) == alpha
+    assert await store.get(str(alpha.id), context=beta.context) == beta
+
+
+async def test_delete_run_unindexes_every_record_of_the_run() -> None:
+    store = InMemoryProvenanceStore()
+    doomed, kept = context(), context()
+    for ctx in (doomed, kept):
+        await store.write(execution(ctx))
+        await store.write(link("a", "b", ctx))
+
+    assert await store.delete_run(doomed) == 2
+    assert await store.delete_run(doomed) == 0
+    assert await store.parents("b", context=doomed) == ()
+    remaining = await collect(store, StoreFilter(application_id="app", tenant_id="tenant"))
+    assert {item.context.run_id for item in remaining} == {kept.run_id}
+    assert len(store._records) == 2
+    doomed_scope = ("app", "tenant", str(doomed.run_id))
+    assert doomed_scope not in store._by_run
+    assert all(scope != doomed_scope for scope, _ in store._by_id)
+
+
+class TestInMemoryStoreContract(ProvenanceStoreContract):
+    async def make_store(self) -> InMemoryProvenanceStore:
+        return InMemoryProvenanceStore()
+
+
+class _StoreThatNeverDeletes(InMemoryProvenanceStore):
+    async def delete_run(self, context) -> int:
+        return 0
+
+
+class _NeverDeletesContract(ProvenanceStoreContract):
+    async def make_store(self) -> InMemoryProvenanceStore:
+        return _StoreThatNeverDeletes()
+
+
+def test_the_contract_reports_which_promise_a_broken_store_breaks() -> None:
+    with pytest.raises(AssertionError, match="delete_run reported 0 deletions, expected 3"):
+        _NeverDeletesContract().test_delete_run_removes_only_that_run_and_is_idempotent()
 
 
 async def test_rewriting_a_link_reindexes_it() -> None:
@@ -142,7 +193,9 @@ async def test_closed_store_rejects_operations_and_unknown_queries() -> None:
     with pytest.raises(RuntimeError, match="closed"):
         await store.write(execution())
     with pytest.raises(RuntimeError, match="closed"):
-        await store.get("x")
+        await store.get("x", context=context())
+    with pytest.raises(RuntimeError, match="closed"):
+        await store.delete_run(context())
     with pytest.raises(RuntimeError, match="closed"):
         await store.parents("x", context=context())
     with pytest.raises(RuntimeError, match="closed"):

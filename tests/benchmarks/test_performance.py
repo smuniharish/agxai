@@ -1,12 +1,15 @@
 """Generous performance budgets that catch order-of-magnitude regressions."""
 
 import asyncio
+import importlib.util
+import sys
 import time
+from pathlib import Path
 
 import pytest
 
-from langgraph_xai import ProvenanceLink, XAIRuntime
-from langgraph_xai.storage import InMemoryProvenanceStore
+from agxai import ProvenanceLink, XAIRuntime
+from agxai.storage import InMemoryProvenanceStore
 from tests.helpers import State, context, linear_graph
 
 pytestmark = pytest.mark.benchmark
@@ -36,24 +39,56 @@ def _graph():
 
 
 async def test_instrumented_async_runs_stay_within_budget() -> None:
-    xai = XAIRuntime()
-    graph = xai.instrument(_graph())
+    runtime = XAIRuntime()
+    graph = runtime.instrument(_graph())
 
     started = time.perf_counter()
     for _ in range(100):
         await graph.ainvoke({"question": "q"})
 
     assert time.perf_counter() - started < 10.0
-    assert xai.errors == ()
+    assert runtime.errors == ()
+
+
+def _overhead_script():
+    path = Path(__file__).parents[2] / "scripts" / "benchmark_overhead.py"
+    spec = importlib.util.spec_from_file_location("benchmark_overhead", path)
+    assert spec is not None
+    assert spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+async def test_overhead_script_reports_bounded_latency_for_every_provider(capsys) -> None:
+    script = _overhead_script()
+
+    results = {result.name: result for result in await script.main(runs=30, events=300, warmup=5)}
+
+    assert set(results) == {
+        "baseline",
+        "instrumented+noop",
+        "instrumented+otel",
+        "instrumented+langfuse",
+        "emit:noop",
+        "emit:otel",
+        "emit:langfuse",
+    }
+    for name in ("noop", "otel", "langfuse"):
+        assert results[f"instrumented+{name}"].p95_ms < results["baseline"].p95_ms + 250
+        assert results[f"emit:{name}"].p95_ms < 25
+    assert results["baseline"].peak_kib is not None
+    assert "p95 ms" in capsys.readouterr().out
 
 
 def test_instrumented_sync_runs_reuse_the_thread_loop_within_budget() -> None:
-    xai = XAIRuntime()
-    graph = xai.instrument(_graph())
+    runtime = XAIRuntime()
+    graph = runtime.instrument(_graph())
 
     started = time.perf_counter()
     for _ in range(100):
         graph.invoke({"question": "q"})
 
     assert time.perf_counter() - started < 10.0
-    assert xai.errors == ()
+    assert runtime.errors == ()

@@ -5,7 +5,7 @@ recorded facts only, filtered by the audience's exposure policy, and it says
 what it withheld.
 
 ```python
-explanation = await xai.explain_decision(decision, audience=Audience.AUDITOR, run=run)
+explanation = await runtime.explain_decision(decision, audience=Audience.AUDITOR, run=run)
 ```
 
 ## Fields

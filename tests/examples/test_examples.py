@@ -2,19 +2,29 @@
 
 from __future__ import annotations
 
+import importlib
 import os
 import runpy
 import subprocess
 import sys
+from contextlib import asynccontextmanager
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pytest
+from langchain_core.messages import AIMessage
+
+from tests.fakes import ScriptedChatModel, scripted_model, tool_call
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncIterator
 
 EXAMPLES = Path(__file__).resolve().parents[2] / "examples"
 
 pytestmark = pytest.mark.examples
 
 OFFLINE = {
+    "custom_framework.py": ["Route: REVIEW", "The routing decision selected 'REVIEW'."],
     "minimal_langgraph.py": ["answer: answer None -> 'Echo: Why?'"],
     "fraud_review.py": [
         "Route: HUMAN_REVIEW",
@@ -74,6 +84,7 @@ def test_every_example_is_covered() -> None:
         "mcp_playwright_tool_agent.py",
         "postgres_store.py",
     }
+    assert set(SCRIPTED) == set(LIVE)
 
 
 LIVE = {
@@ -81,6 +92,60 @@ LIVE = {
     "create_agent_inside_node.py": ['"intake"', '"check_fraud_risk"'],
     "deepagents_agent.py": ['"word_count: succeeded"'],
 }
+
+FRAUD_CHECK = [
+    tool_call("check_fraud_risk", {"transaction_id": "txn-8841", "amount": 9200}, "call_f1"),
+    AIMessage(content="Transaction txn-8841 is high risk (0.91)."),
+]
+# The replies a real model would give, so the model-backed examples run offline.
+SCRIPTED: dict[str, tuple[list[AIMessage], list[str]]] = {
+    "create_agent_decision_explanation.py": (
+        FRAUD_CHECK,
+        [
+            "Agent: Transaction txn-8841 is high risk (0.91).",
+            '"tool_call_id": "call_f1"',
+            "The escalation decision selected 'ESCALATE_FOR_REVIEW'.",
+        ],
+    ),
+    "create_agent_inside_node.py": (
+        FRAUD_CHECK,
+        [
+            '"intake"',
+            '"check_fraud_risk"',
+            '"ESCALATE_FOR_REVIEW"',
+            "Answer: Transaction txn-8841 is high risk (0.91).",
+        ],
+    ),
+    "deepagents_agent.py": (
+        [
+            tool_call("word_count", {"text": "explainability makes agents accountable."}, "c1"),
+            AIMessage(content="The text has 4 words."),
+        ],
+        ['"word_count: succeeded"', '"status": "completed"', "Agent: The text has 4 words."],
+    ),
+}
+
+
+@pytest.mark.parametrize("name", SCRIPTED, ids=list(SCRIPTED))
+def test_llm_examples_run_with_a_scripted_model(
+    name: str, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    if name == "deepagents_agent.py":
+        pytest.importorskip("deepagents")
+    replies, expected = SCRIPTED[name]
+    monkeypatch.syspath_prepend(str(EXAMPLES))
+    shared = importlib.import_module("_shared")
+
+    @asynccontextmanager
+    async def chat_model() -> AsyncIterator[ScriptedChatModel]:
+        yield scripted_model(*replies)
+
+    monkeypatch.setattr(shared, "chat_model", chat_model)
+
+    output = run_example(name, capsys, monkeypatch)
+
+    for text in expected:
+        assert text in output
 
 
 @pytest.mark.live

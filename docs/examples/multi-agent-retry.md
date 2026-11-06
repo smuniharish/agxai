@@ -3,7 +3,7 @@
 A researcher node calls a market-data tool that times out once and succeeds on
 retry, and a writer node turns the result into a report. Both tool attempts are
 recorded, and every record shares one run ID and one trace ID. Source:
-[`examples/multi_agent_retry_correlation.py`](https://github.com/smuniharish/langgraph-xai/blob/master/examples/multi_agent_retry_correlation.py).
+[`examples/multi_agent_retry_correlation.py`](https://github.com/smuniharish/agxai/blob/master/examples/multi_agent_retry_correlation.py).
 
 ```bash
 uv run python examples/multi_agent_retry_correlation.py
@@ -35,13 +35,13 @@ def writer(state: Briefing) -> Briefing:
 The call passes a trace ID, and every stored record of the run is then queried:
 
 ```python
-with xai.collect_runs() as runs:
-    result = await xai.instrument(builder.compile()).ainvoke(
+with runtime.collect_runs() as runs:
+    result = await runtime.instrument(builder.compile()).ainvoke(
         {"symbol": "ACME"}, {"metadata": {"trace_id": "brief-2026-10-04"}}
     )
 (run,) = runs
 
-store = xai.registry.require(ProvenanceStore)
+store = runtime.registry.require(ProvenanceStore)
 records = [
     record
     async for record in store.query(

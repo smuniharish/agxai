@@ -1,10 +1,10 @@
 # PostgreSQL store
 
-`langgraph-xai` keeps records in memory by default. To keep them in a database,
+`agxai` keeps records in memory by default. To keep them in a database,
 subclass the `ProvenanceStore` base class. This example is a complete, tested
 store for PostgreSQL that you can copy into your application: one JSONB table,
-indexed for tenant and run isolation, written with idempotent upserts. Source:
-[`examples/postgres_store.py`](https://github.com/smuniharish/langgraph-xai/blob/master/examples/postgres_store.py).
+keyed and indexed for tenant and run isolation, written with idempotent upserts. Source:
+[`examples/postgres_store.py`](https://github.com/smuniharish/agxai/blob/master/examples/postgres_store.py).
 
 ```bash
 export XAI_POSTGRES_DSN=postgresql://user:password@localhost:5432/xai
@@ -16,15 +16,16 @@ installs. In your own project, add it to your dependencies.
 
 ## Subclassing `ProvenanceStore`
 
-A store implements five methods and inherits the rest:
+A store implements six methods and inherits the rest:
 
 ```python
 class PostgresProvenanceStore(ProvenanceStore):
     async def write(self, item): ...  # insert or replace one record
-    async def get(self, entity_id): ...  # one record by ID
+    async def get(self, entity_id, *, context): ...  # one record by ID, in one run
     async def query(self, query): ...  # records of one application and tenant
     async def parents(self, entity_id, *, context): ...  # links into an entity, in one run
     async def children(self, entity_id, *, context): ...  # links out of an entity, in one run
+    async def delete_run(self, context): ...  # erase one run, return the row count
 
     async def close(self): ...  # optional: the inherited close does nothing
 ```
@@ -34,26 +35,29 @@ visits each entity once, so every store gets the same lineage semantics. A
 store can override it with a faster native query, such as a recursive SQL
 query.
 
-Writes are upserts on `"<record type>:<id>"`:
+Writes are upserts on the record's application, tenant, run, type, and ID, so a
+record in one tenant or run can never replace another's, even if their IDs are
+equal:
 
 ```python
 async def write(self, item: StoredItem) -> None:
-    record_type = type(item).__name__
+    context = item.context
     async with self._pool.connection() as connection:
         await connection.execute(
             """
-            INSERT INTO langgraph_xai_records
-                (record_key, record_type, application_id, tenant_id,
-                 run_id, timestamp, payload)
+            INSERT INTO agxai_records
+                (application_id, tenant_id, run_id, record_type, record_id,
+                 timestamp, payload)
             VALUES (%s, %s, %s, %s, %s, %s, %s::jsonb)
-            ON CONFLICT (record_key) DO UPDATE SET payload = EXCLUDED.payload
+            ON CONFLICT (application_id, tenant_id, run_id, record_type, record_id)
+            DO UPDATE SET timestamp = EXCLUDED.timestamp, payload = EXCLUDED.payload
             """,
             (
-                f"{record_type}:{_record_id(item)}",
-                record_type,
-                item.context.application_id,
-                item.context.tenant_id,
-                item.context.run_id,
+                context.application_id,
+                context.tenant_id,
+                context.run_id,
+                type(item).__name__,
+                _record_id(item),
                 item.timestamp,
                 item.model_dump_json(),
             ),
@@ -66,13 +70,13 @@ async def write(self, item: StoredItem) -> None:
 store = PostgresProvenanceStore(os.environ["XAI_POSTGRES_DSN"])
 await store.open()  # opens the pool, creates the table and indexes if needed
 
-xai = XAIRuntime(application_id="payments", tenant_id="acme-bank", graph_id="fraud-review")
-xai.register(ProvenanceStore, store)
-graph = xai.instrument(builder.compile())
+runtime = XAIRuntime(application_id="payments", tenant_id="acme-bank", graph_id="fraud-review")
+runtime.register(ProvenanceStore, store)
+graph = runtime.instrument(builder.compile())
 try:
     await graph.ainvoke({"transaction_id": "txn-8841"})
 finally:
-    await xai.close()  # flushes providers and closes the store's pool
+    await runtime.close()  # flushes providers and closes the store's pool
 ```
 
 To share a connection pool with the rest of your application, pass it in with
@@ -114,23 +118,41 @@ link. Evidence is not among them, because evidence is delivered to
 `PostgresProvenanceStore.SCHEMA` is the DDL that `open()` runs:
 
 ```sql
-CREATE TABLE IF NOT EXISTS langgraph_xai_records (
-    record_key TEXT PRIMARY KEY,        -- "<record type>:<id>"
-    record_type TEXT NOT NULL,          -- Execution, ProvenanceLink, NodeExecutionEvent, ...
+CREATE TABLE IF NOT EXISTS agxai_records (
     application_id TEXT NOT NULL,
     tenant_id TEXT NOT NULL,
     run_id UUID NOT NULL,
+    record_type TEXT NOT NULL,          -- Execution, ProvenanceLink, NodeExecutionEvent, ...
+    record_id TEXT NOT NULL,
     timestamp TIMESTAMPTZ NOT NULL,
-    payload JSONB NOT NULL
+    payload JSONB NOT NULL,
+    PRIMARY KEY (application_id, tenant_id, run_id, record_type, record_id)
 );
-CREATE INDEX IF NOT EXISTS langgraph_xai_scope_idx
-    ON langgraph_xai_records (application_id, tenant_id, run_id, timestamp);
-CREATE INDEX IF NOT EXISTS langgraph_xai_entity_idx
-    ON langgraph_xai_records ((split_part(record_key, ':', 2)));
+CREATE INDEX IF NOT EXISTS agxai_tenant_time_idx
+    ON agxai_records (application_id, tenant_id, timestamp);
 ```
 
-Every query filters on the application and tenant, and provenance queries also
-filter on the run, using the `langgraph_xai_scope_idx` index.
+Every query filters on the application and tenant. `get`, provenance queries,
+and `delete_run` also filter on the run and use the primary key's leading
+columns; tenant-wide queries use `agxai_tenant_time_idx`.
+
+## Upgrading from `langgraph-xai`
+
+The `langgraph-xai` version of this example kept records in
+`langgraph_xai_records`, keyed by `record_key` (`"type:id"`) alone. Move them
+into `agxai_records` once, after `open()`:
+
+```python
+await store.open()
+moved = await store.migrate_legacy_table()
+```
+
+In one transaction, `migrate_legacy_table` locks the old table, copies every
+row under the new primary key, and drops the old table, so either every row
+moves or nothing changes. It returns the number of rows moved, and `0` when
+there is no old table, so it is safe to leave in a deployment script. Run it
+with a role that owns `langgraph_xai_records`, and stop old application
+instances first, because the lock blocks their writes.
 
 ## Operating it
 
@@ -139,17 +161,21 @@ filter on the run, using the `langgraph_xai_scope_idx` index.
 - **Least privilege.** Creating the schema needs the `CREATE` privilege, even
   when the table already exists. Apply `PostgresProvenanceStore.SCHEMA` once
   with a privileged role, for example in a migration. Then run the application
-  with a role limited to `SELECT`, `INSERT`, and `UPDATE` on
-  `langgraph_xai_records`, and open the store with
+  with a role limited to `SELECT`, `INSERT`, `UPDATE`, and `DELETE` (used only
+  by `delete_run`) on `agxai_records`, and open the store with
   `await store.open(create_schema=False)`.
-- **Retention.** Records are kept until you delete them. Apply your retention
-  policy with SQL, for example
-  `DELETE FROM langgraph_xai_records WHERE timestamp < now() - interval '400 days'`.
+- **Erasure and retention.** Records are kept until you delete them. To erase
+  one run, call `await store.delete_run(context)` with the run's
+  `ExecutionContext`; it returns the number of rows deleted. To apply a
+  retention period across runs, use SQL, for example
+  `DELETE FROM agxai_records WHERE timestamp < now() - interval '400 days'`.
 
 ## Tests
 
-The store's unit tests run against a fake connection pool. The live tests
-write, query, and walk lineage against a real server, check tenant isolation,
-persist an instrumented graph run end to end, and run this demo. Set
+The store's unit tests run against a fake connection pool. The live tests run
+the [store conformance kit](../architecture/storage.md#testing-a-store) against
+a real server, migrate a real `langgraph-xai` table (including a failed
+migration that must change nothing), persist an instrumented graph run end to
+end, and run this demo. Set
 `XAI_TEST_POSTGRES_DSN` to a disposable database to run them; see
 [Testing](../development/testing.md).

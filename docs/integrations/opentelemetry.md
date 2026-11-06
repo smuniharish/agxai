@@ -1,12 +1,12 @@
 # OpenTelemetry
 
-`OpenTelemetryObservability` turns each `langgraph-xai` event into an
+`OpenTelemetryObservability` turns each `agxai` event into an
 OpenTelemetry span. Any OTLP-compatible backend can then store and query the
 explainability record next to your other telemetry: Jaeger, Grafana Tempo,
 Honeycomb, Datadog, or an OpenTelemetry Collector.
 
 ```bash
-pip install "langgraph-xai[otel]" opentelemetry-exporter-otlp-proto-http
+pip install "agxai[otel]" opentelemetry-exporter-otlp-proto-http
 ```
 
 The `otel` extra installs the OpenTelemetry API and SDK. Install the exporter
@@ -17,11 +17,11 @@ from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExport
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 
-from langgraph_xai import ObservabilityProvider, OpenTelemetryObservability
+from agxai import ObservabilityProvider, OpenTelemetryObservability
 
 provider = TracerProvider()
 provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter()))  # OTEL_EXPORTER_OTLP_ENDPOINT
-xai.register(
+runtime.register(
     ObservabilityProvider,
     OpenTelemetryObservability(tracer_provider=provider, owns_provider=True),
 )
@@ -69,5 +69,5 @@ complete canonical event as JSON. Its keys are `context`, `event_type`, `id`,
 | `OpenTelemetryObservability(tracer_provider=p, owns_provider=True)` | `p` | Flushes `p` | Shuts `p` down |
 | `OpenTelemetryObservability(tracer)` | The given tracer | No-op | No-op |
 
-Call `await xai.close()` at shutdown, so batched spans are exported before the
+Call `await runtime.close()` at shutdown, so batched spans are exported before the
 process exits.

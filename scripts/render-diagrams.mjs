@@ -12,7 +12,7 @@ const manifestPath = join(outputDirectory, "manifest.json");
 const checkOnly = process.argv.includes("--check");
 // Diagrams are rendered with exactly this Mermaid CLI version, installed globally;
 // the manifest records it.
-const requiredMermaidVersion = "12.0.0";
+const requiredMermaidVersion = "12.2.0";
 // Puppeteer's install script downloads the headless browser the CLI renders with.
 const installCommand = `npm install --global --allow-scripts=puppeteer @mermaid-js/mermaid-cli@${requiredMermaidVersion}`;
 const renderOptions = { scale: 2, background: "white" };

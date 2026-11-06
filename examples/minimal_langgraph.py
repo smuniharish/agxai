@@ -10,7 +10,7 @@ from typing import TypedDict
 
 from langgraph.graph import END, START, StateGraph
 
-from langgraph_xai import XAIRuntime
+from agxai import XAIRuntime
 
 
 class State(TypedDict, total=False):
@@ -28,10 +28,10 @@ async def main() -> None:
     builder.add_edge(START, "answer")
     builder.add_edge("answer", END)
 
-    xai = XAIRuntime(graph_id="minimal")
-    graph = xai.instrument(builder.compile())
+    runtime = XAIRuntime(graph_id="minimal")
+    graph = runtime.instrument(builder.compile())
 
-    with xai.collect_runs() as runs:
+    with runtime.collect_runs() as runs:
         result = await graph.ainvoke({"question": "Why?"})
 
     execution = runs[0].execution

@@ -5,7 +5,7 @@ continues with `Command(resume=...)`. Because the graph has a checkpointer, both
 runs are linked to LangGraph checkpoints automatically, and the resumed run
 points back to the run that paused. An approval recorded after the run finished
 still reaches the stored record. Source:
-[`examples/human_in_the_loop.py`](https://github.com/smuniharish/langgraph-xai/blob/master/examples/human_in_the_loop.py).
+[`examples/human_in_the_loop.py`](https://github.com/smuniharish/agxai/blob/master/examples/human_in_the_loop.py).
 
 ```bash
 uv run python examples/human_in_the_loop.py
@@ -26,11 +26,11 @@ the reviewer's answer, and then records the reviewer's approval on the resumed
 run. No code links runs or checkpoints:
 
 ```python
-xai = XAIRuntime(graph_id="wire-transfer")
-graph = xai.instrument(builder.compile(checkpointer=InMemorySaver()))
+runtime = XAIRuntime(graph_id="wire-transfer")
+graph = runtime.instrument(builder.compile(checkpointer=InMemorySaver()))
 thread = {"configurable": {"thread_id": "wire-42"}}
 
-with xai.collect_runs() as runs:
+with runtime.collect_runs() as runs:
     paused = await graph.ainvoke({"amount": 9000.0}, thread)
     (question,) = paused["__interrupt__"]
     print(f"Paused on: {question.value['question']}")
@@ -39,7 +39,7 @@ with xai.collect_runs() as runs:
 paused_run, resumed_run = runs
 
 # Recorded after the run finished, and still added to the stored record.
-await xai.record_human_interaction(
+await runtime.record_human_interaction(
     HumanInteractionType.APPROVAL, actor_reference="reviewer:ana", run=resumed_run
 )
 ```

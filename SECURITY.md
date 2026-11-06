@@ -29,11 +29,11 @@ are responsible for:
 - selecting conservative capture settings;
 - applying disclosure policy at capture, storage, export, and display;
 - configuring retention, access control, and encryption for chosen storage and
-  external services;
+  external services, and erasing runs with `ProvenanceStore.delete_run`;
 - keeping API keys and connection strings outside source control; and
 - reviewing integrations' own security and data-handling terms.
 
-`langgraph-xai` is not designed to collect private model chain-of-thought.
+`agxai` is not designed to collect private model chain-of-thought.
 Do not rely on explanation artifacts as a substitute for authorization,
 auditing, incident response, or security controls.
 

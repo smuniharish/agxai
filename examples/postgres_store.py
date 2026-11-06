@@ -1,11 +1,11 @@
-"""A PostgreSQL store for langgraph-xai, built on the `ProvenanceStore` base class.
+"""A PostgreSQL store for agxai, built on the `ProvenanceStore` base class.
 
-langgraph-xai keeps records in memory by default. To persist them in a database,
-subclass `ProvenanceStore` and implement five methods (`write`, `get`, `query`,
-`parents`, and `children`); `lineage` and `close` are inherited. This module is a
-complete, tested store for PostgreSQL that you can copy into your application:
-one JSONB table, indexed for tenant and run isolation, written with idempotent
-upserts.
+agxai keeps records in memory by default. To persist them in a database,
+subclass `ProvenanceStore` and implement six methods (`write`, `get`, `query`,
+`parents`, `children`, and `delete_run`); `lineage` and `close` are inherited.
+This module is a complete, tested store for PostgreSQL that you can copy into
+your application: one JSONB table, keyed and indexed for tenant and run
+isolation, written with idempotent upserts.
 
 Requires ``psycopg[binary,pool]`` (part of the ``examples`` dependency group) and
 a database URL in ``XAI_POSTGRES_DSN``, for example
@@ -28,7 +28,7 @@ from typing import TYPE_CHECKING, Any, ClassVar, TypedDict, cast
 
 from langgraph.graph import END, START, StateGraph
 
-from langgraph_xai import (
+from agxai import (
     EvidenceType,
     Execution,
     ProvenanceLink,
@@ -36,31 +36,39 @@ from langgraph_xai import (
     StoreFilter,
     XAIRuntime,
 )
-from langgraph_xai.core import XAIEvent
+from agxai.core import XAIEvent
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Sequence
 
-    from langgraph_xai import ExecutionContext
-    from langgraph_xai.core import CanonicalEvent, StoreQuery
+    from agxai import ExecutionContext
+    from agxai.core import CanonicalEvent, StoreQuery
 
     type StoredItem = Execution | ProvenanceLink | CanonicalEvent
 
 SCHEMA = """
-CREATE TABLE IF NOT EXISTS langgraph_xai_records (
-    record_key TEXT PRIMARY KEY,
-    record_type TEXT NOT NULL,
+CREATE TABLE IF NOT EXISTS agxai_records (
     application_id TEXT NOT NULL,
     tenant_id TEXT NOT NULL,
     run_id UUID NOT NULL,
+    record_type TEXT NOT NULL,
+    record_id TEXT NOT NULL,
     timestamp TIMESTAMPTZ NOT NULL,
-    payload JSONB NOT NULL
+    payload JSONB NOT NULL,
+    PRIMARY KEY (application_id, tenant_id, run_id, record_type, record_id)
 );
-CREATE INDEX IF NOT EXISTS langgraph_xai_scope_idx
-    ON langgraph_xai_records (application_id, tenant_id, run_id, timestamp);
-CREATE INDEX IF NOT EXISTS langgraph_xai_entity_idx
-    ON langgraph_xai_records ((split_part(record_key, ':', 2)));
+CREATE INDEX IF NOT EXISTS agxai_tenant_time_idx
+    ON agxai_records (application_id, tenant_id, timestamp);
 """
+LEGACY_TABLE = "langgraph_xai_records"
+"""The table of the ``langgraph-xai`` store example, keyed by ``record_key = 'type:id'``."""
+_MIGRATE_LEGACY = f"""
+INSERT INTO agxai_records
+    (application_id, tenant_id, run_id, record_type, record_id, timestamp, payload)
+SELECT application_id, tenant_id, run_id, record_type, payload->>'id', timestamp, payload
+FROM {LEGACY_TABLE}
+ON CONFLICT (application_id, tenant_id, run_id, record_type, record_id) DO NOTHING
+"""  # noqa: S608 - only a module constant is interpolated
 _ORDER = "ORDER BY timestamp, COALESCE((payload->>'sequence')::int, -1), payload->>'id'"
 _MODELS: dict[str, type[Execution | ProvenanceLink | XAIEvent]] = {
     model.__name__: model for model in (Execution, ProvenanceLink, *XAIEvent.__subclasses__())
@@ -69,6 +77,13 @@ _MODELS: dict[str, type[Execution | ProvenanceLink | XAIEvent]] = {
 
 def _record_id(item: StoredItem) -> str:
     return str(item.id)
+
+
+def _record_types(item_type: type[Any] | None) -> list[str] | None:
+    """Return the stored type names a `StoreFilter.item_type` matches, subclasses included."""
+    if item_type is None:
+        return None
+    return [name for name, model in _MODELS.items() if issubclass(model, item_type)]
 
 
 def _decode(record_type: str, payload: Any) -> StoredItem:
@@ -82,9 +97,10 @@ def _decode(record_type: str, payload: Any) -> StoredItem:
 class PostgresProvenanceStore(ProvenanceStore):
     """A JSONB-backed store with indexed tenant and run isolation and idempotent upserts.
 
-    Every record is one row keyed by ``"<record type>:<id>"``. Writes are upserts,
-    so rewriting a record (for example an `Execution` when its run finishes)
-    replaces it. Call `open` once before use.
+    Every record is one row whose primary key is its application, tenant, run,
+    record type, and ID, so a record in one tenant or run can never replace
+    another's. Writes are upserts, so rewriting a record (for example an
+    `Execution` when its run finishes) replaces it. Call `open` once before use.
 
     The store uses psycopg's asynchronous pool, which belongs to the event loop
     that opened it, so record through asynchronous graph calls (``ainvoke``,
@@ -116,7 +132,8 @@ class PostgresProvenanceStore(ProvenanceStore):
 
         Creating the schema needs the ``CREATE`` privilege on the database schema,
         even when the table already exists. An application role limited to
-        ``SELECT``, ``INSERT``, and ``UPDATE`` passes ``create_schema=False`` once
+        ``SELECT``, ``INSERT``, ``UPDATE``, and ``DELETE`` (``DELETE`` is used
+        only by `delete_run`) passes ``create_schema=False`` once
         `SCHEMA` has been applied by a privileged role, for example in a
         migration. If the schema cannot be created, a pool owned by the store is
         closed again, so no background reconnect workers are left running.
@@ -132,37 +149,60 @@ class PostgresProvenanceStore(ProvenanceStore):
                 await self._pool.close()
             raise
 
+    async def migrate_legacy_table(self) -> int:
+        """Move the rows of the ``langgraph-xai`` table into `agxai_records`; return the count.
+
+        Run it once, after `open` created the schema, with a role that owns
+        ``langgraph_xai_records``. In one transaction it locks the old table,
+        copies every row under the new primary key, and drops the old table, so
+        either everything moves or nothing changes. A row whose key already
+        exists in `agxai_records` keeps the newer `agxai_records` version.
+        Returns ``0`` and changes nothing when there is no old table.
+        """
+        async with self._pool.connection() as connection:
+            found = await (
+                await connection.execute("SELECT to_regclass(%s) IS NOT NULL", (LEGACY_TABLE,))
+            ).fetchone()
+            if not found or not found[0]:
+                return 0
+            await connection.execute(f"LOCK TABLE {LEGACY_TABLE} IN ACCESS EXCLUSIVE MODE")
+            moved = (await connection.execute(_MIGRATE_LEGACY)).rowcount
+            await connection.execute(f"DROP TABLE {LEGACY_TABLE}")
+        return moved
+
     async def write(self, item: StoredItem) -> None:
         """Insert or replace ``item``."""
-        record_type = type(item).__name__
+        context = item.context
         async with self._pool.connection() as connection:
             await connection.execute(
                 """
-                INSERT INTO langgraph_xai_records
-                    (record_key, record_type, application_id, tenant_id,
-                     run_id, timestamp, payload)
+                INSERT INTO agxai_records
+                    (application_id, tenant_id, run_id, record_type, record_id,
+                     timestamp, payload)
                 VALUES (%s, %s, %s, %s, %s, %s, %s::jsonb)
-                ON CONFLICT (record_key) DO UPDATE SET payload = EXCLUDED.payload
+                ON CONFLICT (application_id, tenant_id, run_id, record_type, record_id)
+                DO UPDATE SET timestamp = EXCLUDED.timestamp, payload = EXCLUDED.payload
                 """,
                 (
-                    f"{record_type}:{_record_id(item)}",
-                    record_type,
-                    item.context.application_id,
-                    item.context.tenant_id,
-                    item.context.run_id,
+                    context.application_id,
+                    context.tenant_id,
+                    context.run_id,
+                    type(item).__name__,
+                    _record_id(item),
                     item.timestamp,
                     item.model_dump_json(),
                 ),
             )
 
-    async def get(self, entity_id: str) -> StoredItem | None:
-        """Return the record whose ``id`` is ``entity_id``, if any."""
+    async def get(self, entity_id: str, *, context: ExecutionContext) -> StoredItem | None:
+        """Return the record whose ``id`` is ``entity_id`` in the context's run, if any."""
         async with self._pool.connection() as connection:
             rows = await (
                 await connection.execute(
-                    "SELECT record_type, payload FROM langgraph_xai_records "
-                    "WHERE split_part(record_key, ':', 2) = %s LIMIT 2",
-                    (entity_id,),
+                    "SELECT record_type, payload FROM agxai_records "
+                    "WHERE application_id = %s AND tenant_id = %s AND run_id = %s "
+                    "AND record_id = %s LIMIT 2",
+                    (context.application_id, context.tenant_id, context.run_id, entity_id),
                 )
             ).fetchall()
         if len(rows) > 1:
@@ -173,15 +213,15 @@ class PostgresProvenanceStore(ProvenanceStore):
         """Yield the records matching a `StoreFilter`."""
         if not isinstance(query, StoreFilter):
             raise TypeError("PostgresProvenanceStore requires StoreFilter")
-        record_type = query.item_type.__name__ if query.item_type else None
+        record_types = _record_types(query.item_type)
         async with self._pool.connection() as connection:
             rows = await (
                 await connection.execute(
                     f"""
-                    SELECT record_type, payload FROM langgraph_xai_records
+                    SELECT record_type, payload FROM agxai_records
                     WHERE application_id = %s AND tenant_id = %s
                       AND (%s::uuid IS NULL OR run_id = %s::uuid)
-                      AND (%s::text IS NULL OR record_type = %s::text)
+                      AND (%s::text[] IS NULL OR record_type = ANY(%s::text[]))
                     {_ORDER} LIMIT %s OFFSET %s
                     """,  # noqa: S608 - only the constant ORDER BY clause is interpolated
                     (
@@ -189,8 +229,8 @@ class PostgresProvenanceStore(ProvenanceStore):
                         query.tenant_id,
                         query.run_id,
                         query.run_id,
-                        record_type,
-                        record_type,
+                        record_types,
+                        record_types,
                         query.limit,
                         query.offset,
                     ),
@@ -211,6 +251,16 @@ class PostgresProvenanceStore(ProvenanceStore):
         """Return the links whose source is ``entity_id`` within the context's run."""
         return await self._links(entity_id, context, "source_id")
 
+    async def delete_run(self, context: ExecutionContext) -> int:
+        """Delete every record of the context's run in one statement; return the count."""
+        async with self._pool.connection() as connection:
+            cursor = await connection.execute(
+                "DELETE FROM agxai_records "
+                "WHERE application_id = %s AND tenant_id = %s AND run_id = %s",
+                (context.application_id, context.tenant_id, context.run_id),
+            )
+        return cursor.rowcount
+
     async def close(self) -> None:
         """Close the connection pool if this store created it."""
         if self._owns_pool:
@@ -223,7 +273,7 @@ class PostgresProvenanceStore(ProvenanceStore):
             rows = await (
                 await connection.execute(
                     f"""
-                    SELECT payload FROM langgraph_xai_records
+                    SELECT payload FROM agxai_records
                     WHERE record_type = 'ProvenanceLink'
                       AND application_id = %s AND tenant_id = %s AND run_id = %s
                       AND payload->>%s = %s
@@ -252,14 +302,14 @@ async def main() -> None:
         )
     store = PostgresProvenanceStore(dsn)
     await store.open()
-    xai = XAIRuntime(application_id="payments", tenant_id="acme-bank", graph_id="fraud-review")
-    xai.register(ProvenanceStore, store)
+    runtime = XAIRuntime(application_id="payments", tenant_id="acme-bank", graph_id="fraud-review")
+    runtime.register(ProvenanceStore, store)
 
     async def score_risk(state: Review) -> Review:
-        evidence = await xai.record_evidence(
+        evidence = await runtime.record_evidence(
             EvidenceType.TOOL_RESULT, summary="Fraud model scored the transaction 0.91."
         )
-        await xai.record_provenance(
+        await runtime.record_provenance(
             f"transactions://{state['transaction_id']}", evidence.id, "DERIVED_FROM"
         )
         return {"risk_score": 0.91}
@@ -268,10 +318,10 @@ async def main() -> None:
     builder.add_node("score_risk", score_risk)
     builder.add_edge(START, "score_risk")
     builder.add_edge("score_risk", END)
-    graph = xai.instrument(builder.compile())
+    graph = runtime.instrument(builder.compile())
 
     try:
-        with xai.collect_runs() as runs:
+        with runtime.collect_runs() as runs:
             await graph.ainvoke({"transaction_id": "txn-8841"})
         (run,) = runs
         records = [
@@ -289,7 +339,7 @@ async def main() -> None:
             [f"{link.target_id} {link.relation} {link.source_id}" for link in lineage],
         )
     finally:
-        await xai.close()
+        await runtime.close()
 
 
 if __name__ == "__main__":

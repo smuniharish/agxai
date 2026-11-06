@@ -1,7 +1,7 @@
 # Examples
 
 Complete, runnable programs in the
-[`examples/`](https://github.com/smuniharish/langgraph-xai/tree/master/examples)
+[`examples/`](https://github.com/smuniharish/agxai/tree/master/examples)
 directory. Every page shows real output from running the script. The offline
 examples also run in the test suite, so they keep working.
 
@@ -9,6 +9,7 @@ examples also run in the test suite, so they keep working.
 
 | Example | Shows |
 | --- | --- |
+| [Custom framework](custom-framework.md) | A `FrameworkInstrumentor` subclass, evidence, and an explanation with no framework installed |
 | [Minimal graph](minimal-graph.md) | The smallest instrumented graph and what it captures |
 | [Fraud review: full explanation](full-explanation.md) | Evidence, a decision, provenance, and one decision explained to two audiences |
 | [Retrieval and tools](retrieval-and-tools.md) | Retrievers and `ToolNode` calls captured automatically and turned into evidence |
@@ -17,9 +18,9 @@ examples also run in the test suite, so they keep working.
 | [Disclosure matrix](disclosure-matrix.md) | One decision checked against every policy, audience, and engine |
 
 Two more scripts back the documentation: the
-[canonical model gallery](https://github.com/smuniharish/langgraph-xai/blob/master/examples/canonical_model_gallery.py)
+[canonical model gallery](https://github.com/smuniharish/agxai/blob/master/examples/canonical_model_gallery.py)
 prints every record type for the [Concepts](../concepts/index.md) pages, and
-[`failure_modes.py`](https://github.com/smuniharish/langgraph-xai/blob/master/examples/failure_modes.py)
+[`failure_modes.py`](https://github.com/smuniharish/agxai/blob/master/examples/failure_modes.py)
 produces the output in [Configure failure modes](../how-to/failure-modes.md).
 
 ## Run with a chat model
@@ -41,6 +42,11 @@ gateway and `OPENAI_MODEL` to pick the model (default `gpt-4o-mini`).
 | [PostgreSQL store](postgres-store.md) | A complete `ProvenanceStore` subclass that keeps records in PostgreSQL | `examples` group, `XAI_POSTGRES_DSN` |
 
 ## Running an example
+
+The custom-framework example needs only `agxai`. LangGraph examples need
+`agxai[langgraph]`; model-backed examples also need `llm-openai` and their
+framework dependencies. The command below installs every development group
+and extra for running the repository's full example collection.
 
 From a clone of the repository:
 

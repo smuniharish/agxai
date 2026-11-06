@@ -8,7 +8,7 @@ suites run against real backends when you point them at one.
 ```bash
 uv sync --all-extras --all-groups
 uv run pytest                                              # the full offline suite
-uv run pytest --cov=langgraph_xai --cov-branch             # with coverage (kept at 100%)
+uv run pytest --cov=agxai --cov-branch             # with coverage (kept at 100%)
 uv run ruff check . && uv run ruff format --check .        # lint and formatting
 uv run pyrefly check                                       # type checking
 ```
@@ -23,14 +23,35 @@ is fixed. Ignores are narrow and name the third-party warning they silence.
 | --- | --- |
 | `tests/unit` | Models, configuration, registry, redaction, plugins |
 | `tests/runtime` | The run lifecycle, recording, failure modes, concurrency, the sync bridge |
-| `tests/langgraph` | Instrumentation of real LangGraph graphs: every entry point, output version, and stream mode; nodes, state, tools, retrievers; interrupts, static breakpoints, checkpoints, and resumed runs; subgraphs, `Send`, the functional API, node caching, `create_agent` |
+| `tests/integrations` | Framework ABC lifecycle, sync/async capture, nesting, concurrency, error propagation, and core imports with frameworks blocked |
+| `tests/integrations/langgraph` | Instrumentation of real LangGraph graphs: every entry point, output version, and stream mode; nodes, state, tools, retrievers; interrupts, static breakpoints, checkpoints, and resumed runs; subgraphs, `Send`, the functional API, node caching, `create_agent` |
 | `tests/attribution`, `tests/explanation` | Attribution math, explanation content, disclosure, the LLM engine with stub models |
-| `tests/storage` | The in-memory store, including a stateful property test |
+| `tests/storage` | The in-memory store, including a stateful property test and the store conformance kit |
 | `tests/observability` | Every adapter, against the real LangSmith, Langfuse, and OpenTelemetry SDKs |
 | `tests/examples` | Every example script, the PostgreSQL store example, and the README and documentation quickstarts |
 | `tests/skill` | The Agent Skill: the reference validator, links, the setup check, and the test template |
-| `tests/benchmarks` | Performance regression bounds |
+| `tests/benchmarks` | Performance regression bounds, and a smoke run of the overhead benchmark |
 | `tests/live` | The LLM explanation engine against a real model |
+
+The in-memory store and the live PostgreSQL store both run
+`agxai.testing.ProvenanceStoreContract`, the same conformance kit a custom
+store should run; see [Storage](../architecture/storage.md#testing-a-store).
+
+## Measuring overhead
+
+`scripts/benchmark_overhead.py` reports p50, p95, and p99 latency and peak
+traced memory for a five-node graph, uninstrumented and instrumented with
+each observability provider, plus how long each adapter's `emit` holds the
+event loop per event. OpenTelemetry and Langfuse export through their real
+batch processors into an in-memory exporter, so nothing leaves the machine.
+
+```bash
+uv run python scripts/benchmark_overhead.py --runs 500 --events 5000
+```
+
+Compare scenarios against `baseline` on the same machine; absolute numbers
+vary between machines. `tests/benchmarks` runs the script with small counts
+and generous bounds, so it catches order-of-magnitude regressions only.
 
 ## Property-based tests
 
@@ -86,6 +107,12 @@ asserts that data actually arrived, not just that a call did not raise.
 | `tests/observability/test_langfuse_live.py` | `XAI_TEST_LANGFUSE_HOST`, `XAI_TEST_LANGFUSE_PUBLIC_KEY`, `XAI_TEST_LANGFUSE_SECRET_KEY` |
 | `tests/live/test_llm_explanation_live.py` and the model-backed examples | `XAI_TEST_LLM_API_KEY`, optionally `XAI_TEST_LLM_BASE_URL` and `XAI_TEST_LLM_MODEL` |
 
+The model-backed examples and the LLM explanation engine also run in every
+normal test run, offline: `tests/fakes.py` provides `ScriptedChatModel`, a
+LangChain `GenericFakeChatModel` that accepts tool binding and replays the
+replies a real model would give. The live variants above then only confirm
+that a real provider behaves the same way.
+
 A local PostgreSQL and OpenTelemetry Collector, with Docker or Podman:
 
 ```bash
@@ -128,7 +155,7 @@ node scripts/render-diagrams.mjs        # re-render diagrams after editing diagr
 node scripts/render-diagrams.mjs --check
 ```
 
-Diagrams are rendered with Mermaid CLI 12.0.0, installed globally
-(`npm install --global --allow-scripts=puppeteer @mermaid-js/mermaid-cli@12.0.0`,
+Diagrams are rendered with Mermaid CLI 12.2.0, installed globally
+(`npm install --global --allow-scripts=puppeteer @mermaid-js/mermaid-cli@12.2.0`,
 Node.js 22.13 or later). The check needs only Node.js, and fails when a
 rendered image is missing, stale, or has no source.

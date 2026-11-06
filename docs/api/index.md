@@ -1,12 +1,14 @@
 # API reference
 
 Generated from the docstrings of the public API. The classes you use day to day
-are importable from the top-level `langgraph_xai` package; each entry below
+are importable from the top-level `agxai` package; optional framework classes
+are imported from their integration modules. Each entry below
 shows the module where the class is defined.
 
 | Page | Contents |
 | --- | --- |
-| [Runtime](runtime.md) | `XAIRuntime`, `Run`, `XAIInstrumentationError`, `Registry`, `InstrumentedGraph`, `RUN_ID_METADATA_KEY` |
+| [Runtime](runtime.md) | `XAIRuntime`, `Run`, `XAIInstrumentationError`, `Registry`, `RUN_ID_METADATA_KEY` |
+| [Framework integrations](integrations.md) | `FrameworkInstrumentor`, optional `LangGraphInstrumentor` and `InstrumentedGraph`, `InterruptLike` |
 | [Configuration](config.md) | `XAIConfig` |
 | [Canonical models](models.md) | Execution records, decision records, explanation records, events, and enumerations |
 | [Capabilities](protocols.md) | The `ProvenanceStore` base class and the provider protocols |
@@ -16,6 +18,7 @@ shows the module where the class is defined.
 | [Attribution engines](attribution.md) | `HybridAttribution`, `RuleBasedAttribution`, `EvidenceAttribution` |
 | [Policies](policy.md) | `DefaultCapturePolicy`, `DefaultPolicyProvider`, and the redaction helpers |
 | [Plugins](plugins.md) | `XAIPlugin`, `PluginManager` |
+| [Testing](testing.md) | `ProvenanceStoreContract`, the conformance tests for custom stores |
 
 ## Stability
 
@@ -24,4 +27,4 @@ shows the module where the class is defined.
 - Serialized records are versioned contracts, identified by their
   `schema_version`. See [Canonical model](../architecture/canonical-model.md#compatibility).
 - Breaking changes happen only in major releases, and each one is listed in
-  the [changelog](https://github.com/smuniharish/langgraph-xai/blob/master/CHANGELOG.md).
+  the [changelog](https://github.com/smuniharish/agxai/blob/master/CHANGELOG.md).

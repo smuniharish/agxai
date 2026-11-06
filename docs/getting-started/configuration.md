@@ -5,9 +5,9 @@ core never reads environment variables, so two runtimes in one process (one per
 tenant, or one per test) cannot affect each other.
 
 ```python
-from langgraph_xai import CaptureMode, FailureMode, XAIConfig, XAIRuntime
+from agxai import CaptureMode, FailureMode, XAIConfig, XAIRuntime
 
-xai = XAIRuntime(
+runtime = XAIRuntime(
     XAIConfig(
         capture_state=CaptureMode.DELTA,
         failure_mode=FailureMode.FAIL_OPEN,
@@ -60,7 +60,7 @@ await graph.ainvoke(
 | Other metadata keys | `ExecutionContext.metadata`, after [redaction](../concepts/policies.md#redaction) |
 
 Instrumented calls add the run ID to the metadata the graph receives, under
-`RUN_ID_METADATA_KEY` (`"langgraph_xai_run_id"`), so nodes can read it and
+`RUN_ID_METADATA_KEY` (`"agxai_run_id"`), so nodes can read it and
 LangGraph stores it with each checkpoint. It is not copied into
 `ExecutionContext.metadata`.
 
@@ -100,7 +100,7 @@ JSON-safe form before storage; see [Redaction](../concepts/policies.md#redaction
 ## Providers
 
 Every capability is a small protocol with a working default. Replace any of
-them with `xai.register(Protocol, provider)`:
+them with `runtime.register(Protocol, provider)`:
 
 | Capability | Default | Alternatives |
 | --- | --- | --- |
@@ -123,7 +123,7 @@ graph:
 
 | Mode | Behavior |
 | --- | --- |
-| `FAIL_OPEN` | The error is kept in `xai.errors` (the last 100) and the graph continues. |
+| `FAIL_OPEN` | The error is kept in `runtime.errors` (the last 100) and the graph continues. |
 | `FAIL_CLOSED` | The error is raised as `XAIInstrumentationError`, including from inside a graph call. |
 | `STRICT` | Like `FAIL_CLOSED`, and records may not be dropped silently. Evidence and decisions need at least one plugin, and execution records need a store or observability provider. |
 
@@ -139,7 +139,10 @@ fails, because a partial or unfiltered explanation is never returned. See
 ## Credentials
 
 Provider SDKs read their own environment variables: `LANGSMITH_API_KEY`,
-`LANGFUSE_PUBLIC_KEY`/`LANGFUSE_SECRET_KEY`, `OTEL_EXPORTER_OTLP_ENDPOINT`, or
-the database URL your application passes to its store.
-`langgraph-xai` never copies these values into records. Their presence does not
-enable anything by itself: a provider is active only after you register it.
+`LANGFUSE_PUBLIC_KEY`/`LANGFUSE_SECRET_KEY`/`LANGFUSE_BASE_URL`, the
+`OTEL_EXPORTER_OTLP_*` variables of an OTLP exporter you configure, or the
+database URL your application passes to its store. `agxai` itself reads no
+environment variables and never copies these values into records. Their
+presence does not enable anything by itself: a provider is active only after
+you register it. `.env.example` lists every variable the examples and live test
+suites read, grouped by consumer.

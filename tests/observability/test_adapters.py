@@ -8,8 +8,8 @@ import pytest
 from hypothesis import given
 from hypothesis import strategies as st
 
-from langgraph_xai import ObservabilityProvider, XAIRuntime
-from langgraph_xai.core import (
+from agxai import ObservabilityProvider, XAIRuntime
+from agxai.core import (
     ExceptionEvent,
     ExecutionCompletedEvent,
     ExecutionFailedEvent,
@@ -18,14 +18,14 @@ from langgraph_xai.core import (
     HumanInteractionType,
     InterruptEvent,
 )
-from langgraph_xai.observability import (
+from agxai.observability import (
     LangfuseObservability,
     LangSmithObservability,
     OpenTelemetryObservability,
     langfuse_trace_context,
 )
-from langgraph_xai.observability import langfuse as langfuse_module
-from langgraph_xai.observability import langsmith as langsmith_module
+from agxai.observability import langfuse as langfuse_module
+from agxai.observability import langsmith as langsmith_module
 from tests.helpers import context
 
 # SDK clients are autospecced, so every call the adapters (and LangSmith's RunTree)
@@ -150,7 +150,7 @@ async def test_langsmith_groups_a_run_into_one_trace_and_ends_it(langsmith_clien
     assert root["id"] == ctx.run_id
     assert root["trace_id"] == ctx.run_id
     assert root["session_name"] == "xai"
-    assert root["name"] == "langgraph-xai: graph"
+    assert root["name"] == "agxai: graph"
     assert "xai.event_id" not in root["extra"]["metadata"]
     assert [first["name"], second["name"]] == ["execution.started", "execution.completed"]
     assert first["id"] == started.id

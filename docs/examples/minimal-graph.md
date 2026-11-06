@@ -2,7 +2,7 @@
 
 The smallest useful integration: wrap a compiled graph, run it, and read what
 was captured. Source:
-[`examples/minimal_langgraph.py`](https://github.com/smuniharish/langgraph-xai/blob/master/examples/minimal_langgraph.py).
+[`examples/minimal_langgraph.py`](https://github.com/smuniharish/agxai/blob/master/examples/minimal_langgraph.py).
 
 ```python
 class State(TypedDict, total=False):
@@ -19,10 +19,10 @@ builder.add_node("answer", answer)
 builder.add_edge(START, "answer")
 builder.add_edge("answer", END)
 
-xai = XAIRuntime(graph_id="minimal")
-graph = xai.instrument(builder.compile())
+runtime = XAIRuntime(graph_id="minimal")
+graph = runtime.instrument(builder.compile())
 
-with xai.collect_runs() as runs:
+with runtime.collect_runs() as runs:
     result = await graph.ainvoke({"question": "Why?"})
 
 execution = runs[0].execution

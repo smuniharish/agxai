@@ -20,7 +20,7 @@ from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.graph import END, START, StateGraph
 from langgraph.types import Command, interrupt
 
-from langgraph_xai import (
+from agxai import (
     Execution,
     HumanInteractionType,
     ProvenanceStore,
@@ -69,11 +69,11 @@ async def main() -> None:
     builder.add_edge(START, "human_review")
     builder.add_edge("human_review", END)
 
-    xai = XAIRuntime(graph_id="wire-transfer")
-    graph = xai.instrument(builder.compile(checkpointer=InMemorySaver()))
+    runtime = XAIRuntime(graph_id="wire-transfer")
+    graph = runtime.instrument(builder.compile(checkpointer=InMemorySaver()))
     thread = {"configurable": {"thread_id": "wire-42"}}
 
-    with xai.collect_runs() as runs:
+    with runtime.collect_runs() as runs:
         paused = await graph.ainvoke({"amount": 9000.0}, thread)
         (question,) = paused["__interrupt__"]
         print(f"Paused on: {question.value['question']}")
@@ -82,17 +82,17 @@ async def main() -> None:
     paused_run, resumed_run = runs
 
     # Recorded after the run finished, and still added to the stored record.
-    await xai.record_human_interaction(
+    await runtime.record_human_interaction(
         HumanInteractionType.APPROVAL, actor_reference="reviewer:ana", run=resumed_run
     )
 
     show("Paused run", describe(paused_run.execution))
     show("Resumed run", describe(resumed_run.execution))
 
-    store = xai.registry.require(ProvenanceStore)
+    store = runtime.registry.require(ProvenanceStore)
     query = StoreFilter(
-        application_id=xai.application_id,
-        tenant_id=xai.tenant_id,
+        application_id=runtime.application_id,
+        tenant_id=runtime.tenant_id,
         run_id=resumed_run.run_id,
         item_type=Execution,
     )
