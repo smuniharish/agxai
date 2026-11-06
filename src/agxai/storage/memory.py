@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, cast
 from uuid import UUID
 
+from ..core.contracts import ProvenanceStore, StoreQuery
 from ..core.models import (
     CanonicalEvent,
     Execution,
@@ -15,7 +16,6 @@ from ..core.models import (
     ProvenanceLink,
     XAIEvent,
 )
-from ..core.protocols import ProvenanceStore, StoreQuery
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Sequence

@@ -1,7 +1,7 @@
 # Storage
 
 `InMemoryProvenanceStore` is the default store of every runtime. Other backends
-subclass the [`ProvenanceStore`](protocols.md#storage) base class; the
+subclass the [`ProvenanceStore`](contracts.md#storage) base class; the
 [PostgreSQL store example](../examples/postgres-store.md) is a complete one.
 `StoreFilter` is the query object both use. See
 [Storage architecture](../architecture/storage.md).

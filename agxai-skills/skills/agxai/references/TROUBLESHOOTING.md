@@ -115,7 +115,7 @@ of `token`.
 
 The `ProvenanceStore` holds executions, events, and provenance links.
 Evidence, decisions, and memory references are delivered to plugins. Register
-an `XAIPlugin` that persists them.
+an `XAIPlugin` subclass that persists them.
 
 ## Timeouts
 

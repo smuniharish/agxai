@@ -26,7 +26,7 @@ class BlockFrameworks(importlib.abc.MetaPathFinder):
 
 sys.meta_path.insert(0, BlockFrameworks())
 import agxai
-from agxai.core import InterruptLike
+from agxai.core import RunInterrupt
 
 async def main():
     runtime = agxai.XAIRuntime()

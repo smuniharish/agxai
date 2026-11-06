@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Protocol, runtime_checkable
+from abc import ABC, abstractmethod
 
 from agxai.core.models import (
     AttributionResult,
@@ -18,24 +18,22 @@ type SemanticArtifact = (
 )
 
 
-@runtime_checkable
-class XAIPlugin(Protocol):
-    """An instance-scoped consumer of semantic artifacts.
+class XAIPlugin(ABC):
+    """Base class for instance-scoped consumers of semantic artifacts.
 
     Evidence, decisions, memory references, and artifacts passed to
     `XAIRuntime.record_artifact` are delivered to every registered plugin as they
-    are recorded. Implement this to persist them, forward them to a review
-    queue, or index them for search.
+    are recorded. Subclass it and implement `record` to persist them, forward
+    them to a review queue, or index them for search; override `flush` and
+    `close` if the plugin buffers or holds resources.
     """
 
+    @abstractmethod
     async def record(self, artifact: SemanticArtifact) -> None:
         """Receive one semantic artifact."""
-        ...
 
-    async def flush(self) -> None:
-        """Deliver any buffered artifacts."""
-        ...
+    async def flush(self) -> None:  # noqa: B027 - optional hook, no-op by default
+        """Deliver any buffered artifacts. The default does nothing."""
 
-    async def close(self) -> None:
-        """Flush and release resources."""
-        ...
+    async def close(self) -> None:  # noqa: B027 - optional hook, no-op by default
+        """Flush and release resources. The default does nothing."""

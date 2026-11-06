@@ -21,7 +21,7 @@
       "expected_output": "A PolicyProvider whose evaluate returns denied_fields {contributing_factors, supporting_evidence} for Audience.END_USER and nothing for other audiences, registered on the runtime, plus pytest tests that check every audience and search the serialized end-user explanation for the score.",
       "files": [],
       "assertions": [
-        "A class implementing PolicyProvider.evaluate is added and registered with runtime.register(PolicyProvider, ...)",
+        "A class subclassing PolicyProvider and implementing evaluate is added and registered with runtime.register(PolicyProvider, ...)",
         "For Audience.END_USER the policy denies contributing_factors and supporting_evidence",
         "Internal audiences (developer, auditor, or business) are not restricted",
         "A test asserts the score value does not appear in the end-user explanation's serialized JSON",

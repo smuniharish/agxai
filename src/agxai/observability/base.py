@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 import threading
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from collections import OrderedDict
 from importlib import import_module
 from typing import TYPE_CHECKING, Any
 
+from ..core.contracts import ObservabilityProvider
 from .errors import AdapterClosedError, ObservabilityAdapterError, OptionalDependencyError
 
 if TYPE_CHECKING:
@@ -50,8 +51,8 @@ def correlation_fields(event: CanonicalEvent) -> dict[str, str]:
     return fields
 
 
-class ObservabilityAdapter(ABC):
-    """Base class implementing the `ObservabilityProvider` lifecycle safely.
+class ObservabilityAdapter(ObservabilityProvider):
+    """Base class adding safe lifecycle handling to an `ObservabilityProvider`.
 
     Subclasses implement `_emit` (and optionally `_flush`/`_close`). The base
     class rejects use after `close`, wraps backend errors in
@@ -114,10 +115,10 @@ class ObservabilityAdapter(ABC):
     async def _emit(self, event: CanonicalEvent) -> None:
         """Send one event to the concrete backend."""
 
-    async def _flush(self) -> None:  # noqa: B027 - optional hook, no-op by default
+    async def _flush(self) -> None:
         """Flush the backend; no-op by default."""
 
-    async def _close(self) -> None:  # noqa: B027 - optional hook, no-op by default
+    async def _close(self) -> None:
         """Close the backend; no-op by default."""
 
     def _claim(self, event_id: UUID) -> bool:

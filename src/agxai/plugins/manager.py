@@ -30,9 +30,9 @@ class PluginManager:
         return tuple(self._plugins)
 
     def add(self, plugin: XAIPlugin) -> XAIPlugin:
-        """Register ``plugin``; raises `TypeError` if it does not implement `XAIPlugin`."""
+        """Register ``plugin``; raises `TypeError` if it does not subclass `XAIPlugin`."""
         if not isinstance(plugin, XAIPlugin):
-            raise TypeError(f"{type(plugin).__name__} does not implement XAIPlugin")
+            raise TypeError(f"{type(plugin).__name__} does not subclass XAIPlugin")
         self._plugins.append(plugin)
         return plugin
 

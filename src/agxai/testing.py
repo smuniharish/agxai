@@ -43,8 +43,8 @@ from .storage.memory import StoreFilter
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable, Coroutine
 
+    from .core.contracts import ProvenanceStore, StoreQuery
     from .core.models import CanonicalEvent
-    from .core.protocols import ProvenanceStore, StoreQuery
 
     type StoredItem = Execution | ProvenanceLink | CanonicalEvent
 

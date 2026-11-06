@@ -80,10 +80,11 @@ cross every framework boundary. The `graph_id` field is retained as a stable
 identifier for the workflow, crew, or agent being explained.
 
 For explicit lifecycle management, use `start_run`, `activate_run`, and
-`finish_run`. `finish_run(interrupts=...)` accepts any object satisfying
-`agxai.core.InterruptLike` (`id` and `value` properties); no LangGraph type is
-required. Adapters implementing resumable calls must also map their
-framework's pause/resume and checkpoint semantics, not infer them from output.
+`finish_run`. `finish_run(interrupts=...)` takes a sequence of
+`agxai.RunInterrupt(id, value)`; convert your framework's interrupt objects to
+it, so no LangGraph type is required. Adapters implementing resumable calls must
+also map their framework's pause/resume and checkpoint semantics, not infer them
+from output.
 
 ## Validate your integration
 
@@ -95,6 +96,7 @@ agxai core.
 
 Run the [complete dependency-free example](../examples/custom-framework.md),
 then see the [API reference](../api/integrations.md). Storage and telemetry
-remain independent extension points: `ProvenanceStore` and
-`ObservabilityAdapter` are ABCs; other capability contracts are structural
-protocols, as described in [Extensibility](../architecture/plugins.md).
+remain independent extension points. Every capability contract, including
+`ProvenanceStore`, `ObservabilityProvider`, and `XAIPlugin`, is an abstract
+base class that your provider subclasses, as described in
+[Extensibility](../architecture/plugins.md).

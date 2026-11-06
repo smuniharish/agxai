@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
+from ..core.contracts import ExplanationEngine
 from ..core.models import (
     AttributionContribution,
     Decision,
@@ -79,7 +80,7 @@ def _decision_reasons(decision: Decision, *, include_factors: bool) -> list[str]
     return reasons
 
 
-class StructuredExplanationEngine:
+class StructuredExplanationEngine(ExplanationEngine):
     """Build a deterministic explanation from canonical fields, without calling a model.
 
     The summary names the decision and selected action; ``reasons`` list the
@@ -91,8 +92,6 @@ class StructuredExplanationEngine:
     and records why in ``disclosure``. Withholding ``contributing_factors`` also
     removes factor values from ``reasons``.
     """
-
-    requires_llm = False
 
     async def explain(self, context: ExplanationContext) -> Explanation:
         """Render ``context`` for ``context.audience``."""

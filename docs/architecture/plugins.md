@@ -12,30 +12,30 @@ instrumentors; see [Custom frameworks](../integrations/custom-frameworks.md).
 ## Runtime providers
 
 Every capability of the runtime has a small, typed contract and a working
-default. Storage is an abstract base class, `ProvenanceStore`: a store
-subclasses it and inherits the lineage walk. Every other capability is a
-`typing.Protocol` that a provider satisfies structurally, by having the right
-methods, without inheriting from anything. Each runtime resolves providers
-through its own `Registry`, so swapping a backend never requires changing the
-runtime.
+default. Each contract is an abstract base class: a provider subclasses it and
+implements its abstract methods. `runtime.register` rejects any object that
+does not subclass the capability, even if it has methods with the right names,
+so a provider is checked when it is registered rather than when it is first
+called. Each runtime resolves providers through its own `Registry`, so swapping
+a backend never requires changing the runtime.
 
-![Capabilities, protocols, and built-in providers](../assets/diagrams/extensibility.png)
+![Capabilities, base classes, and built-in providers](../assets/diagrams/extensibility.png)
 
 ## Capabilities
 
-| Protocol | Methods | Built-in providers |
-| --- | --- | --- |
-| `ProvenanceStore` | Abstract base class: `write`, `get`, `query`, `parents`, `children`, `delete_run` to implement; `lineage` and `close` inherited; checked by `agxai.testing.ProvenanceStoreContract` | `InMemoryProvenanceStore` (default); a [PostgreSQL store](../examples/postgres-store.md) in the examples |
-| `ObservabilityProvider` | `emit`, `flush`, `close` | `NoOpObservability` (default), `LangSmithObservability`, `LangfuseObservability`, `OpenTelemetryObservability` |
-| `CapturePolicy` | `evaluate(event)` | `DefaultCapturePolicy` (default) |
-| `PolicyProvider` | `evaluate(context, action)` | `DefaultPolicyProvider` (default) |
-| `AttributionEngine` | `attribute(context)` | `HybridAttribution` (default), `RuleBasedAttribution`, `EvidenceAttribution` |
-| `ExplanationEngine` | `requires_llm`, `explain(context)` | `StructuredExplanationEngine` (default), `LLMExplanationEngine` |
+| Capability | Implement | Inherited | Built-in providers |
+| --- | --- | --- | --- |
+| `ProvenanceStore` | `write`, `get`, `query`, `parents`, `children`, `delete_run` | `lineage`, `close`; checked by `agxai.testing.ProvenanceStoreContract` | `InMemoryProvenanceStore` (default); a [PostgreSQL store](../examples/postgres-store.md) in the examples |
+| `ObservabilityProvider` | `emit` | `flush`, `close` (no-ops) | `NoOpObservability` (default), `LangSmithObservability`, `LangfuseObservability`, `OpenTelemetryObservability` |
+| `CapturePolicy` | `evaluate(event)` | | `DefaultCapturePolicy` (default) |
+| `PolicyProvider` | `evaluate(context, action)` | | `DefaultPolicyProvider` (default) |
+| `AttributionEngine` | `attribute(context)` | | `HybridAttribution` (default), `RuleBasedAttribution`, `EvidenceAttribution` |
+| `ExplanationEngine` | `explain(context)` | `requires_llm = False` | `StructuredExplanationEngine` (default), `LLMExplanationEngine` |
 
 Every method is `async`. Register a provider with
-`runtime.register(Capability, provider)`, which checks that the provider is a
-`ProvenanceStore` subclass or implements the protocol, and replaces the
-previous one. `runtime.registry.require(Capability)` returns the active provider.
+`runtime.register(Capability, provider)`, which raises `TypeError` unless the
+provider subclasses the capability, and replaces the previous provider.
+`runtime.registry.require(Capability)` returns the active provider.
 
 A runtime's registry is its own. To share providers between runtimes, for
 example one store for several tenants' runtimes, register the same provider
@@ -46,11 +46,15 @@ instance in each, or pass one `Registry` to several runtimes.
 Plugins receive the semantic records that do not go to the store: every
 evidence, decision, and memory record as it is created, and anything passed to
 `record_artifact`. Use one to persist them, index them for search, or forward
-them to a review queue.
+them to a review queue. A plugin subclasses the `XAIPlugin` abstract base class
+and implements `record`; `flush` and `close` are optional hooks.
 
 ```python
-class Archive:
-    """An XAIPlugin that keeps every evidence and decision record (use your database)."""
+from agxai import XAIPlugin, XAIRuntime
+
+
+class Archive(XAIPlugin):
+    """Keeps every evidence and decision record (use your database)."""
 
     def __init__(self) -> None:
         self.artifacts = {}
@@ -58,24 +62,20 @@ class Archive:
     async def record(self, artifact) -> None:
         self.artifacts[artifact.id] = artifact
 
-    async def flush(self) -> None:
-        pass
-
-    async def close(self) -> None:
-        pass
-
 
 runtime = XAIRuntime(plugins=(Archive(),))
 ```
 
-Add plugins at construction or later with `runtime.plugins.add(plugin)`. Every
+Add plugins at construction or later with `runtime.plugins.add(plugin)`; both
+raise `TypeError` for an object that does not subclass `XAIPlugin`. Every
 plugin receives every call, even when another plugin fails. The failures are
 then raised together, as an `ExceptionGroup` if there are several, and handled
 by the failure mode once. Plugins are closed in reverse registration order.
 
 ## Writing a provider
 
-Keep these contracts, and the runtime's guarantees hold for your provider too:
+Subclass the capability's base class and keep these contracts, and the
+runtime's guarantees hold for your provider too:
 
 - **Stores** subclass `ProvenanceStore` and make writes idempotent upserts
   keyed by application, tenant, run, record type, and ID. An `Execution` is

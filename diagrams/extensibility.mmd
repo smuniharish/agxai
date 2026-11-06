@@ -1,23 +1,23 @@
 flowchart TB
     classDef core fill:#eef4ff,stroke:#3567c7,color:#0f2547
-    classDef protocol fill:#fff7e8,stroke:#c98a12,color:#0f2547
+    classDef contract fill:#fff7e8,stroke:#c98a12,color:#0f2547
     classDef impl fill:#ecf8f1,stroke:#2f8f5b,color:#0f2547
 
     runtime["XAIRuntime"]:::core
-    framework["FrameworkInstrumentor<br/>abstract base class"]:::protocol
+    framework["FrameworkInstrumentor<br/>abstract base class"]:::contract
     framework --> runtime
     framework --> frameworks["LangGraphInstrumentor (optional extra)<br/>your Agno / CrewAI / custom adapter"]:::impl
     registry["Registry<br/>register(capability, provider)"]:::core
     runtime --> registry
     runtime --> manager["PluginManager"]:::core
 
-    registry --> store["ProvenanceStore<br/>abstract base class"]:::protocol
-    registry --> observe["ObservabilityProvider"]:::protocol
-    registry --> capture["CapturePolicy"]:::protocol
-    registry --> policy["PolicyProvider"]:::protocol
-    registry --> attribution["AttributionEngine"]:::protocol
-    registry --> engine["ExplanationEngine"]:::protocol
-    manager --> plugin["XAIPlugin"]:::protocol
+    registry --> store["ProvenanceStore<br/>abstract base class"]:::contract
+    registry --> observe["ObservabilityProvider<br/>abstract base class"]:::contract
+    registry --> capture["CapturePolicy<br/>abstract base class"]:::contract
+    registry --> policy["PolicyProvider<br/>abstract base class"]:::contract
+    registry --> attribution["AttributionEngine<br/>abstract base class"]:::contract
+    registry --> engine["ExplanationEngine<br/>abstract base class"]:::contract
+    manager --> plugin["XAIPlugin<br/>abstract base class"]:::contract
 
     store --> storeImpl["InMemoryProvenanceStore (default)<br/>your subclass, e.g. PostgreSQL"]:::impl
     observe --> observeImpl["NoOp · LangSmith<br/>Langfuse · OpenTelemetry"]:::impl

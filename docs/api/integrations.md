@@ -21,6 +21,6 @@ it is not loaded by `import agxai`.
 
 ::: agxai.integrations.langgraph.graph.InstrumentedGraph
 
-## InterruptLike
+## RunInterrupt
 
-::: agxai.core.protocols.InterruptLike
+::: agxai.core.contracts.RunInterrupt

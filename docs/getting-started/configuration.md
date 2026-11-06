@@ -99,8 +99,9 @@ JSON-safe form before storage; see [Redaction](../guide/concepts/policies.md#red
 
 ## Providers
 
-Every capability is a small protocol with a working default. Replace any of
-them with `runtime.register(Protocol, provider)`:
+Every capability is an abstract base class with a working default. Replace any
+of them with `runtime.register(Capability, provider)`, where `provider` is an
+instance of your subclass:
 
 | Capability | Default | Alternatives |
 | --- | --- | --- |
@@ -111,7 +112,7 @@ them with `runtime.register(Protocol, provider)`:
 | `AttributionEngine` | `HybridAttribution` | `EvidenceAttribution`, `RuleBasedAttribution`, your own |
 | `ExplanationEngine` | `StructuredExplanationEngine` | [`LLMExplanationEngine`](../guide/how-to/llm-explanations.md), your own |
 
-`XAIPlugin` instances, passed as `XAIRuntime(plugins=(...))`, receive every
+`XAIPlugin` subclasses, passed as `XAIRuntime(plugins=(...))`, receive every
 evidence, decision, and memory record as it is created. See
 [Extensibility](../architecture/plugins.md).
 

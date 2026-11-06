@@ -15,6 +15,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, JsonValue
 
+from ..core.contracts import CapturePolicy, PolicyProvider
 from ..core.models import CanonicalEvent, ExplanationContext, PolicyAction, PolicyDecision
 
 REDACTED = "[not captured]"
@@ -145,7 +146,7 @@ def _sanitize_container(value: object, depth: int, active: set[int]) -> JsonValu
     return repr(value)
 
 
-class DefaultCapturePolicy:
+class DefaultCapturePolicy(CapturePolicy):
     """Allow every canonical event; values are credential-minimized before capture."""
 
     async def evaluate(self, event: CanonicalEvent) -> PolicyDecision:
@@ -159,7 +160,7 @@ class DefaultCapturePolicy:
         )
 
 
-class DefaultPolicyProvider:
+class DefaultPolicyProvider(PolicyProvider):
     """Record that private memory and raw content are never exposed.
 
     The built-in explanation engines never read raw content or private memory,

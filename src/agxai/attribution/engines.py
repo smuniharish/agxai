@@ -14,6 +14,7 @@ from collections.abc import Callable, Mapping
 from statistics import fmean
 from typing import TYPE_CHECKING
 
+from ..core.contracts import AttributionEngine
 from ..core.models import (
     AttributionContribution,
     AttributionResult,
@@ -39,7 +40,7 @@ def _subject(context: ExplanationContext) -> UUID:
     return context.decision.id if context.decision else context.execution.id
 
 
-class RuleBasedAttribution:
+class RuleBasedAttribution(AttributionEngine):
     """Attribute a decision from its explicit `DecisionFactor`s.
 
     Each factor is scored, in order of precedence, by a callable rule
@@ -99,7 +100,7 @@ class RuleBasedAttribution:
         )
 
 
-class EvidenceAttribution:
+class EvidenceAttribution(AttributionEngine):
     """Attribute a decision from the strength of its supporting evidence.
 
     Each evidence item scores ``confidence * quality`` (a missing value counts
@@ -152,7 +153,7 @@ class EvidenceAttribution:
         )
 
 
-class HybridAttribution:
+class HybridAttribution(AttributionEngine):
     """Combine decision factors and evidence, each with a fixed share (the default engine).
 
     Each family's scores are first normalized to an absolute sum of one, then

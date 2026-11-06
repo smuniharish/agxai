@@ -71,7 +71,7 @@ A policy provider shows end users the outcome and reasons, and everyone else
 everything:
 
 ```python
-class CustomerSafePolicy:
+class CustomerSafePolicy(PolicyProvider):
     """End users see the outcome and reasons; other audiences see everything."""
 
     async def evaluate(self, context: ExplanationContext, action: PolicyAction) -> PolicyDecision:

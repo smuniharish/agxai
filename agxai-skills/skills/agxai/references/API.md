@@ -44,7 +44,7 @@ Instrumentation and runs:
 | `collect_runs()` | Context manager yielding a list that receives every `Run` started in the block, including in tasks it spawns. |
 | `current_run` | The `Run` of the instrumented call executing the current node, tool, or middleware; `None` outside one. |
 | `start_run(config=None, *, continuation_of=None) -> Run` | Start a run for work that does not go through an instrumented graph. |
-| `finish_run(run, error=None, *, cancelled=False, interrupts=(), pending_nodes=())` | Finish a manually started run. |
+| `finish_run(run, error=None, *, cancelled=False, interrupts=(), pending_nodes=())` | Finish a manually started run; `interrupts` is a sequence of `RunInterrupt(id, value)`. |
 | `run_sync(coroutine)` | Run a coroutine from synchronous code, such as a `record_*` call in a sync node. |
 | `context_from_config(config) -> ExecutionContext` | Build context from a mapping with `metadata` / `configurable` sections (LangChain-compatible, no framework required). |
 | `activate_run(run)` | Context manager setting `current_run` for recording, restoring the previous context on exit. |
@@ -175,20 +175,22 @@ Top-level records have an `id`, a `timestamp`, and a `context`
 
 ## Capabilities and providers
 
-Register a provider with `runtime.register(Capability, provider)`:
+Register a provider with `runtime.register(Capability, provider)`. Every
+capability is an abstract base class: a provider must subclass it, or
+`register` raises `TypeError`.
 
 | Capability | Default | Contract |
 | --- | --- | --- |
-| `ProvenanceStore` | `InMemoryProvenanceStore` | Abstract base class: implement `write`, `get`, `query`, `parents`, `children`, `delete_run`; `lineage` and `close` are inherited. Verify with `agxai.testing.ProvenanceStoreContract`. |
-| `ObservabilityProvider` | `NoOpObservability` | `LangSmithObservability(client=None, *, project_name=None)`, `LangfuseObservability(client=None)`, `OpenTelemetryObservability(tracer=None, *, tracer_provider=None, owns_provider=False)` |
-| `PolicyProvider` | `DefaultPolicyProvider` | `async evaluate(context: ExplanationContext, action: PolicyAction) -> PolicyDecision` |
-| `CapturePolicy` | `DefaultCapturePolicy` | `async evaluate(event: CanonicalEvent) -> PolicyDecision`; `allowed=False` drops the event. |
-| `AttributionEngine` | `HybridAttribution` | Also `RuleBasedAttribution`, `EvidenceAttribution` |
-| `ExplanationEngine` | `StructuredExplanationEngine` | Also `LLMExplanationEngine(model, *, enabled=False, timeout=30.0)`, which also needs `XAIConfig(llm_explanation_enabled=True)` |
+| `ProvenanceStore` | `InMemoryProvenanceStore` | Implement `write`, `get`, `query`, `parents`, `children`, `delete_run`; `lineage` and `close` are inherited. Verify with `agxai.testing.ProvenanceStoreContract`. |
+| `ObservabilityProvider` | `NoOpObservability` | Implement `async emit(event)`; `flush` and `close` are optional. Built in: `LangSmithObservability(client=None, *, project_name=None)`, `LangfuseObservability(client=None)`, `OpenTelemetryObservability(tracer=None, *, tracer_provider=None, owns_provider=False)` |
+| `PolicyProvider` | `DefaultPolicyProvider` | Implement `async evaluate(context: ExplanationContext, action: PolicyAction) -> PolicyDecision` |
+| `CapturePolicy` | `DefaultCapturePolicy` | Implement `async evaluate(event: CanonicalEvent) -> PolicyDecision`; `allowed=False` drops the event. |
+| `AttributionEngine` | `HybridAttribution` | Implement `async attribute(context) -> AttributionResult`. Also built in: `RuleBasedAttribution`, `EvidenceAttribution` |
+| `ExplanationEngine` | `StructuredExplanationEngine` | Implement `async explain(context) -> Explanation`; set `requires_llm = True` if it calls a model. Also built in: `LLMExplanationEngine(model, *, enabled=False, timeout=30.0)`, which also needs `XAIConfig(llm_explanation_enabled=True)` |
 
-`XAIPlugin` instances, passed as `XAIRuntime(plugins=(...))`, receive every
-evidence, decision, and memory record through `async record(artifact)`, plus
-`flush()` and `close()`.
+`XAIPlugin` subclasses, passed as `XAIRuntime(plugins=(...))`, receive every
+evidence, decision, and memory record through `async record(artifact)`;
+`flush()` and `close()` are optional hooks.
 
 An exposure `PolicyDecision` withholds an explanation section (`reasons`,
 `contributing_factors`, or `supporting_evidence`) when `allowed` is false, when

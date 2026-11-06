@@ -108,6 +108,6 @@ so a score withheld from one section cannot reappear in another.
 | `LLMExplanationEngine` | Rephrases the summary and reasons in natural language with a LangChain chat model you inject. The model receives only facts the policy allows, and its reply must match a strict JSON schema. Requires `enabled=True` and `XAIConfig(llm_explanation_enabled=True)`. See [LLM-phrased explanations](../how-to/llm-explanations.md). |
 
 To render explanations differently, for example in another language or as
-HTML, implement the `ExplanationEngine` protocol: a `requires_llm` attribute
-and one `async def explain(context)`. Use the policy decisions in
-`context.policies` to decide what to show.
+HTML, subclass the `ExplanationEngine` abstract base class and implement one
+`async def explain(context)`; set `requires_llm = True` if it calls a model.
+Use the policy decisions in `context.policies` to decide what to show.

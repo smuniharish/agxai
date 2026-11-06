@@ -5,7 +5,7 @@ from tests.helpers import RecordingPlugin, context
 
 
 def test_plugins_are_validated_on_construction_and_add() -> None:
-    with pytest.raises(TypeError, match="does not implement XAIPlugin"):
+    with pytest.raises(TypeError, match="does not subclass XAIPlugin"):
         PluginManager([object()])  # pyrefly: ignore[bad-argument-type]
     manager = PluginManager()
     with pytest.raises(TypeError):

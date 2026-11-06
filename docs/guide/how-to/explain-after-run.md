@@ -64,20 +64,14 @@ persist two things:
 Later, rebuild an `ExplanationContext` and call `explain`:
 
 ```python
-class Archive:
-    """An XAIPlugin that keeps every evidence and decision record (use your database)."""
+class Archive(XAIPlugin):
+    """Keeps every evidence and decision record (use your database)."""
 
     def __init__(self) -> None:
         self.artifacts = {}
 
     async def record(self, artifact) -> None:
         self.artifacts[artifact.id] = artifact
-
-    async def flush(self) -> None:
-        pass
-
-    async def close(self) -> None:
-        pass
 
 
 archive = Archive()

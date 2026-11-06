@@ -37,7 +37,7 @@ from agxai import (
 RESTRICTED = frozenset({Audience.BUSINESS, Audience.END_USER})
 
 
-class PermissivePolicy:
+class PermissivePolicy(PolicyProvider):
     async def evaluate(self, context: ExplanationContext, action: PolicyAction) -> PolicyDecision:
         return PolicyDecision(
             context=context.execution.context,
@@ -49,7 +49,7 @@ class PermissivePolicy:
         )
 
 
-class AudienceScopedPolicy:
+class AudienceScopedPolicy(PolicyProvider):
     async def evaluate(self, context: ExplanationContext, action: PolicyAction) -> PolicyDecision:
         restricted = context.audience in RESTRICTED
         return PolicyDecision(

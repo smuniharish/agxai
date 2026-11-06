@@ -2,8 +2,8 @@
 
 Copy this file, then adapt the three marked places to your framework:
 
-1. `AgentLike`: the entry points your framework's agent exposes.
-2. `InstrumentedAgent`: wrap exactly those entry points, nothing else.
+1. `Agent`: point it at your framework's agent class.
+2. `InstrumentedAgent`: wrap exactly the agent's entry points, nothing else.
 3. `AgentInstrumentor.step` and `tool_call`: call them from your framework's
    public step or tool callbacks, if it has any.
 
@@ -16,26 +16,22 @@ from __future__ import annotations
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 from time import perf_counter
-from typing import TYPE_CHECKING, Any, Protocol
+from typing import TYPE_CHECKING, Any
 
 from agxai import ExecutionStatus, FrameworkInstrumentor, ToolStatus
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Mapping
 
-
-class AgentLike(Protocol):
-    """(1) The calls your framework's agent exposes."""
-
-    async def arun(self, task: str) -> str: ...
-
-    def run(self, task: str) -> str: ...
+# (1) Replace with your framework's agent class, for example
+# ``from your_framework import Agent``.
+Agent = Any
 
 
 class InstrumentedAgent:
     """(2) Called exactly like the agent; each top-level call becomes one run."""
 
-    def __init__(self, agent: AgentLike, instrumentor: AgentInstrumentor) -> None:
+    def __init__(self, agent: Agent, instrumentor: AgentInstrumentor) -> None:
         self._agent = agent
         self._instrumentor = instrumentor
 
@@ -52,10 +48,10 @@ class InstrumentedAgent:
         return getattr(self._agent, name)
 
 
-class AgentInstrumentor(FrameworkInstrumentor[AgentLike, InstrumentedAgent]):
+class AgentInstrumentor(FrameworkInstrumentor[Agent, InstrumentedAgent]):
     """Records each agent call as a run, plus the steps and tools reported to it."""
 
-    def instrument(self, target: AgentLike) -> InstrumentedAgent:
+    def instrument(self, target: Agent) -> InstrumentedAgent:
         return InstrumentedAgent(target, self)
 
     @asynccontextmanager

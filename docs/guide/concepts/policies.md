@@ -78,7 +78,7 @@ backend, and not in the run's `Execution`.
 from agxai import CapturePolicy, PolicyAction, PolicyDecision
 
 
-class NoStateValuesForEU:
+class NoStateValuesForEU(CapturePolicy):
     """EU tenants: record which nodes ran, but not the state values they changed."""
 
     async def evaluate(self, event) -> PolicyDecision:
@@ -138,10 +138,10 @@ content and private memory are never exposed. Real output for an end user:
 
 The built-in engines never read raw content or private memory, so these denied
 fields document that guarantee. To scope disclosure per audience, register your
-own provider:
+own subclass of `PolicyProvider`:
 
 ```python
-class CustomerSafePolicy:
+class CustomerSafePolicy(PolicyProvider):
     """End users see the outcome and reasons; other audiences see everything."""
 
     async def evaluate(self, context: ExplanationContext, action: PolicyAction) -> PolicyDecision:

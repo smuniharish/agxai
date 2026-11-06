@@ -8,10 +8,10 @@ shows the module where the class is defined.
 | Page | Contents |
 | --- | --- |
 | [Runtime](runtime.md) | `XAIRuntime`, `Run`, `XAIInstrumentationError`, `Registry`, `RUN_ID_METADATA_KEY` |
-| [Framework integrations](integrations.md) | `FrameworkInstrumentor`, optional `LangGraphInstrumentor` and `InstrumentedGraph`, `InterruptLike` |
+| [Framework integrations](integrations.md) | `FrameworkInstrumentor`, optional `LangGraphInstrumentor` and `InstrumentedGraph`, `RunInterrupt` |
 | [Configuration](config.md) | `XAIConfig` |
 | [Canonical models](models.md) | Execution records, decision records, explanation records, events, and enumerations |
-| [Capabilities](protocols.md) | The `ProvenanceStore` base class and the provider protocols |
+| [Capabilities](contracts.md) | The capability abstract base classes, from `ProvenanceStore` to `ExplanationEngine` |
 | [Storage](storage.md) | `InMemoryProvenanceStore`, `StoreFilter` |
 | [Observability](observability.md) | LangSmith, Langfuse, OpenTelemetry, and no-op adapters, the adapter base class, helpers, and errors |
 | [Explanation engines](explanation.md) | `StructuredExplanationEngine`, `LLMExplanationEngine`, `ExplanationDraft` |

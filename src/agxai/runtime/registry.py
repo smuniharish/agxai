@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
-from typing import TypeVar
+from typing import TypeVar, cast
 
 Capability = TypeVar("Capability")
 
 
 class Registry:
-    """Map each capability protocol to the provider one runtime uses for it."""
+    """Map each capability base class to the provider one runtime uses for it."""
 
     def __init__(self) -> None:
         self._providers: dict[type[object], object] = {}
@@ -17,21 +17,16 @@ class Registry:
         """Register or replace the provider of ``capability``.
 
         Raises:
-            TypeError: If ``provider`` does not implement ``capability``.
+            TypeError: If ``provider`` is not an instance of a ``capability`` subclass.
         """
         if not isinstance(provider, capability):
-            raise TypeError(f"{type(provider).__name__} does not implement {capability.__name__}")
+            raise TypeError(f"{type(provider).__name__} does not subclass {capability.__name__}")
         self._providers[capability] = provider
         return provider
 
     def get(self, capability: type[Capability]) -> Capability | None:
         """Return the provider of ``capability``, or ``None`` if none is registered."""
-        provider = self._providers.get(capability)
-        if provider is None:
-            return None
-        if not isinstance(provider, capability):
-            raise TypeError(f"Registered provider no longer implements {capability.__name__}")
-        return provider
+        return cast("Capability | None", self._providers.get(capability))
 
     def require(self, capability: type[Capability]) -> Capability:
         """Return the provider of ``capability``.
@@ -49,5 +44,5 @@ class Registry:
         return self._providers.pop(capability, None)
 
     def capabilities(self) -> tuple[type[object], ...]:
-        """The registered capability protocols, in registration order."""
+        """The registered capability base classes, in registration order."""
         return tuple(self._providers)

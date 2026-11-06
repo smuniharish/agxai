@@ -20,6 +20,7 @@ from langgraph.checkpoint.base import BaseCheckpointSaver
 from langgraph.pregel import Pregel
 from langgraph.types import Command
 
+from agxai.core.contracts import RunInterrupt
 from agxai.core.models import HumanInteractionType
 from agxai.runtime.runtime import RUN_ID_METADATA_KEY, XAIInstrumentationError
 
@@ -39,7 +40,7 @@ if TYPE_CHECKING:
     from langchain_core.runnables import Runnable
     from langchain_core.runnables.config import RunnableConfig
     from langchain_core.runnables.schema import StreamEvent
-    from langgraph.types import Interrupt, StateSnapshot
+    from langgraph.types import StateSnapshot
 
     from agxai.runtime import Run, XAIRuntime
 
@@ -599,7 +600,9 @@ class InstrumentedGraph[Input, Output]:
     async def _end(
         self, call: _Call, error: BaseException | None = None, *, cancelled: bool = False
     ) -> None:
-        interrupts: list[Interrupt] = list(call.capture.interrupts.values())
+        interrupts = [
+            RunInterrupt(id=item.id, value=item.value) for item in call.capture.interrupts.values()
+        ]
         pending: Sequence[str] = ()
         failure: XAIInstrumentationError | None = None
         if call.thread is not None and not cancelled:
@@ -611,7 +614,9 @@ class InstrumentedGraph[Input, Output]:
                 if _writer(latest) == call.run.run_id:
                     await self._checkpoint(call.run, latest, restored=False)
                 interrupts.extend(
-                    item for item in latest.interrupts if item.id not in call.capture.interrupts
+                    RunInterrupt(id=item.id, value=item.value)
+                    for item in latest.interrupts
+                    if item.id not in call.capture.interrupts
                 )
                 pending = latest.next
         await self.runtime.finish_run(

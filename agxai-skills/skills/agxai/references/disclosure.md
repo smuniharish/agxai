@@ -17,7 +17,7 @@ from agxai import (
 )
 
 
-class CustomerSafePolicy:
+class CustomerSafePolicy(PolicyProvider):
     """End users see the outcome and reasons; other audiences see everything."""
 
     async def evaluate(self, context: ExplanationContext, action: PolicyAction) -> PolicyDecision:

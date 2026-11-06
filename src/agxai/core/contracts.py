@@ -1,16 +1,17 @@
 """Provider-neutral capability contracts consumed by `XAIRuntime`.
 
-Storage is an abstract base class, `ProvenanceStore`: a store subclasses it and
-inherits the lineage walk. Every other capability is a `typing.Protocol` that a
-provider satisfies structurally, without inheriting from anything. The runtime
-resolves capabilities by type through its `Registry` and never branches on
-concrete classes, so adding a backend never requires a runtime change.
+Every capability is an abstract base class. A provider subclasses the
+capability and implements its abstract methods; the runtime's `Registry`
+rejects any object that does not. The runtime resolves capabilities by type
+and never branches on concrete classes, so adding a backend never requires a
+runtime change.
 """
 
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, Any, ClassVar
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Sequence
@@ -28,18 +29,17 @@ if TYPE_CHECKING:
     )
 
 
-class InterruptLike(Protocol):
-    """Framework-neutral interrupt shape accepted by `XAIRuntime.finish_run`."""
+@dataclass(frozen=True, slots=True)
+class RunInterrupt:
+    """A pause in a run, passed to `XAIRuntime.finish_run`.
 
-    @property
-    def id(self) -> str:
-        """The framework's stable interrupt reference."""
-        ...
+    Framework instrumentors convert their framework's interrupt objects to this
+    type. ``id`` is the framework's stable interrupt reference; ``value`` is the
+    interrupt payload, sanitized before it is recorded.
+    """
 
-    @property
-    def value(self) -> Any:
-        """The interrupt payload, sanitized before recording."""
-        ...
+    id: str
+    value: Any = None
 
 
 class StoreQuery:
@@ -160,73 +160,70 @@ class ProvenanceStore(ABC):
         """Release resources held by the store. The default does nothing."""
 
 
-@runtime_checkable
-class ObservabilityProvider(Protocol):
-    """Telemetry sink for canonical events (LangSmith, Langfuse, OpenTelemetry, or none).
+class ObservabilityProvider(ABC):
+    """Base class for telemetry sinks of canonical events.
 
     The runtime forwards each canonical event to the registered provider, so an
     existing tracing stack gains the explainability layer without a separate
-    integration per provider.
+    integration per provider. Subclass it and implement `emit`; override
+    `flush` and `close` if the backend buffers or holds a connection.
+    `ObservabilityAdapter` is a subclass that adds deduplication and error
+    wrapping.
     """
 
+    @abstractmethod
     async def emit(self, event: CanonicalEvent) -> None:
         """Send one canonical event to the backend."""
-        ...
 
-    async def flush(self) -> None:
-        """Deliver any buffered events."""
-        ...
+    async def flush(self) -> None:  # noqa: B027 - optional hook, no-op by default
+        """Deliver any buffered events. The default does nothing."""
 
-    async def close(self) -> None:
-        """Flush and release the backend connection."""
-        ...
+    async def close(self) -> None:  # noqa: B027 - optional hook, no-op by default
+        """Flush and release the backend connection. The default does nothing."""
 
 
-@runtime_checkable
-class AttributionEngine(Protocol):
-    """Scores which factors and evidence contributed to a decision, and by how much.
+class AttributionEngine(ABC):
+    """Base class for engines that score what contributed to a decision, and by how much.
 
     See [Concepts: Attribution](../guide/concepts/attribution.md) for the output shape
     and what an `AttributionResult` does and does not claim.
     """
 
+    @abstractmethod
     async def attribute(self, context: ExplanationContext) -> AttributionResult:
         """Return signed contributions for the decision in ``context``."""
-        ...
 
 
-@runtime_checkable
-class ExplanationEngine(Protocol):
-    """Assembles the final `Explanation` from a policy-filtered context.
+class ExplanationEngine(ABC):
+    """Base class for engines that assemble an `Explanation` from a policy-filtered context.
 
-    Set ``requires_llm = True`` if `explain` calls a live model; the runtime then
-    refuses to run it unless `XAIConfig.llm_explanation_enabled` is set.
+    Set ``requires_llm = True`` on a subclass whose `explain` calls a live model;
+    the runtime then refuses to run it unless `XAIConfig.llm_explanation_enabled`
+    is set.
     """
 
-    requires_llm: bool
+    requires_llm: ClassVar[bool] = False
 
+    @abstractmethod
     async def explain(self, context: ExplanationContext) -> Explanation:
         """Render an explanation for ``context.audience``."""
-        ...
 
 
-@runtime_checkable
-class PolicyProvider(Protocol):
-    """Decides what an audience may see when an explanation is exposed.
+class PolicyProvider(ABC):
+    """Base class for policies that decide what an audience may see.
 
     See [Concepts: Policies](../guide/concepts/policies.md) for a real `PolicyDecision`
     and how the explanation engines honor it.
     """
 
+    @abstractmethod
     async def evaluate(self, context: ExplanationContext, action: PolicyAction) -> PolicyDecision:
         """Return the policy decision for ``action`` and ``context.audience``."""
-        ...
 
 
-@runtime_checkable
-class CapturePolicy(Protocol):
-    """Decides, per canonical event, whether it may be stored and emitted."""
+class CapturePolicy(ABC):
+    """Base class for policies that decide whether each canonical event may be captured."""
 
+    @abstractmethod
     async def evaluate(self, event: CanonicalEvent) -> PolicyDecision:
         """Return a decision whose ``allowed`` flag gates the event."""
-        ...

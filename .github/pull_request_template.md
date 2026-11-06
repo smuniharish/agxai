@@ -14,7 +14,7 @@ it helps reviewers understand and validate your change quickly.
 ## Type of change
 
 - [ ] Bug fix
-- [ ] New feature (protocol, provider, canonical model field, capability)
+- [ ] New feature (capability base class, provider, canonical model field)
 - [ ] Documentation
 - [ ] Refactor / internal cleanup (no behavior change)
 - [ ] Other (describe above)
@@ -38,6 +38,6 @@ it helps reviewers understand and validate your change quickly.
 <!--
 Does this change what is captured, stored, exported to a tracing backend, or
 disclosed in an explanation? Describe the effect, or write "None".
-New providers should implement an existing capability contract (the
-ProvenanceStore base class or a protocol) without changes to XAIRuntime.
+New providers should subclass an existing capability base class (such as
+ProvenanceStore or PolicyProvider) without changes to XAIRuntime.
 -->

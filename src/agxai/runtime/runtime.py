@@ -15,6 +15,15 @@ from uuid import UUID, uuid4
 
 from agxai.attribution import HybridAttribution
 from agxai.config import XAIConfig
+from agxai.core.contracts import (
+    AttributionEngine,
+    CapturePolicy,
+    ExplanationEngine,
+    ObservabilityProvider,
+    PolicyProvider,
+    ProvenanceStore,
+    RunInterrupt,
+)
 from agxai.core.models import (
     AttributionResult,
     Audience,
@@ -57,15 +66,6 @@ from agxai.core.models import (
     ToolExecutionEvent,
     ToolStatus,
     utc_now,
-)
-from agxai.core.protocols import (
-    AttributionEngine,
-    CapturePolicy,
-    ExplanationEngine,
-    InterruptLike,
-    ObservabilityProvider,
-    PolicyProvider,
-    ProvenanceStore,
 )
 from agxai.explanation import StructuredExplanationEngine
 from agxai.observability import NoOpObservability
@@ -410,7 +410,11 @@ class XAIRuntime:
         return active[1] if active is not None and active[0] is self else None
 
     def register(self, capability: type[T], provider: T) -> T:
-        """Register or replace the provider of one capability protocol."""
+        """Register or replace the provider of one capability.
+
+        Raises:
+            TypeError: If ``provider`` is not an instance of a ``capability`` subclass.
+        """
         return self.registry.register(capability, provider)
 
     def instrument[Input, Output](
@@ -579,7 +583,7 @@ class XAIRuntime:
         error: BaseException | None = None,
         *,
         cancelled: bool = False,
-        interrupts: Sequence[InterruptLike] = (),
+        interrupts: Sequence[RunInterrupt] = (),
         pending_nodes: Sequence[str] = (),
     ) -> None:
         """Finish a run as completed, failed, cancelled, or interrupted, and persist it.
@@ -591,8 +595,9 @@ class XAIRuntime:
             error: The exception the run failed with; the run becomes
                 ``FAILED`` and an `ExceptionEvent` is recorded.
             cancelled: Whether the run was cancelled; it becomes ``CANCELLED``.
-            interrupts: Objects with ``id`` and ``value`` attributes that the run
-                paused on (including LangGraph ``Interrupt`` objects).
+            interrupts: The interrupts the run paused on; framework
+                instrumentors convert their own interrupt objects to
+                `RunInterrupt`.
                 Unless ``error`` or ``cancelled`` is set, the run becomes
                 ``INTERRUPTED`` and one ``INTERRUPT`` `HumanInteraction` is
                 recorded per interrupt, with the interrupt's ``id`` as

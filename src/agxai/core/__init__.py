@@ -1,5 +1,15 @@
 """Public canonical contracts for agxai."""
 
+from .contracts import (
+    AttributionEngine,
+    CapturePolicy,
+    ExplanationEngine,
+    ObservabilityProvider,
+    PolicyProvider,
+    ProvenanceStore,
+    RunInterrupt,
+    StoreQuery,
+)
 from .models import (
     SCHEMA_VERSION,
     AttributionContribution,
@@ -49,16 +59,6 @@ from .models import (
     XAIEvent,
     utc_now,
 )
-from .protocols import (
-    AttributionEngine,
-    CapturePolicy,
-    ExplanationEngine,
-    InterruptLike,
-    ObservabilityProvider,
-    PolicyProvider,
-    ProvenanceStore,
-    StoreQuery,
-)
 
 __all__ = [
     "SCHEMA_VERSION",
@@ -91,7 +91,6 @@ __all__ = [
     "HumanInteraction",
     "HumanInteractionType",
     "InterruptEvent",
-    "InterruptLike",
     "MemoryOperation",
     "MemoryReference",
     "Metadata",
@@ -106,6 +105,7 @@ __all__ = [
     "RetrievalExecution",
     "RetrievalExecutionEvent",
     "RetrievedDocument",
+    "RunInterrupt",
     "SourceReference",
     "StateChange",
     "StateTransition",

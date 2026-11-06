@@ -15,9 +15,9 @@ export, attribute, filter, and explain them.
 | `InstrumentedGraph` | A transparent proxy around a compiled graph. Starts and finishes a run for each top-level call, such as `invoke`, `stream`, or `astream_events`, and each batch input. Attaches the callback handler and, for a checkpointed thread, links the run to its checkpoints and to the run it continues. |
 | Callback handlers | Recognize LangGraph nodes, state changes, tool calls, retrievers, and interrupts from LangChain callbacks, and record them through the runtime. |
 | `XAIRuntime` | Owns configuration, the registry, and plugins. Builds canonical records, applies redaction and the capture policy, delivers records to sinks, enforces concurrency, timeouts, and the failure mode, and assembles explanations. |
-| `Registry` | Maps each capability protocol to the provider one runtime uses. |
-| Providers | `ProvenanceStore` (an abstract base class), plus `ObservabilityProvider`, `CapturePolicy`, `PolicyProvider`, `AttributionEngine`, and `ExplanationEngine` (each a small `typing.Protocol`), all with built-in defaults. |
-| Plugins | Receive every evidence, decision, and memory record. |
+| `Registry` | Maps each capability base class to the provider one runtime uses, rejecting providers that do not subclass it. |
+| Providers | Subclasses of the capability abstract base classes `ProvenanceStore`, `ObservabilityProvider`, `CapturePolicy`, `PolicyProvider`, `AttributionEngine`, and `ExplanationEngine`, all with built-in defaults. |
+| Plugins | Subclasses of the `XAIPlugin` abstract base class; receive every evidence, decision, and memory record. |
 
 ## Lifecycle of a LangGraph call
 
@@ -64,7 +64,7 @@ details of each step.
 
 | Module | Contents |
 | --- | --- |
-| `agxai.core` | Canonical models and capability protocols |
+| `agxai.core` | Canonical models and capability base classes |
 | `agxai.runtime` | `XAIRuntime`, `Run`, `Registry`, `XAIInstrumentationError`, `RUN_ID_METADATA_KEY` |
 | `agxai.integrations` | `FrameworkInstrumentor` ABC (no framework dependencies) |
 | `agxai.integrations.langgraph` | Optional `LangGraphInstrumentor`, `InstrumentedGraph`, and callback handlers |

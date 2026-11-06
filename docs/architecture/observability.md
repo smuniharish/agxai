@@ -48,5 +48,6 @@ public helpers for custom adapters.
 
 Subclass `ObservabilityAdapter` and implement `_emit(event)`, and optionally
 `_flush()` and `_close()`. Deduplication, lifecycle checks, and error wrapping
-come from the base class. To use a backend without the base class, implement
-the three `async` methods of the `ObservabilityProvider` protocol directly.
+come from the base class. To use a backend without those features, subclass
+`ObservabilityProvider` directly and implement `emit`; `flush` and `close` are
+optional overrides.

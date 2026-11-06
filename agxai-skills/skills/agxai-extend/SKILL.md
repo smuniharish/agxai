@@ -16,7 +16,7 @@ compatibility: >-
   Python 3.12 or newer with agxai 1.x installed (pip install agxai). No agent
   framework is required by the templates; the scripts run offline.
 metadata:
-  version: "1.0.1"
+  version: "1.0.2"
   documentation: "https://agxai.readthedocs.io/en/latest/integrations/custom-frameworks/"
 ---
 
@@ -37,8 +37,9 @@ store first: the instrumentor's tests can then use it.
 1. Find the framework's top-level entry points (for example `run` and `arun`,
    or `kickoff` and `kickoff_async`), and any public step or tool callbacks,
    in the version the project pins. Do not invent callbacks.
-2. Copy `assets/instrumentor_template.py` into the project. Adapt
-   `AgentLike` and `InstrumentedAgent` to those entry points. Wrap each async
+2. Copy `assets/instrumentor_template.py` into the project. Point `Agent` at
+   the framework's agent class and adapt `InstrumentedAgent` to its entry
+   points. Wrap each async
    entry in `async with self.capture(config):` and each sync entry in
    `with self.capture_sync(config):`.
 3. Forward every other attribute unchanged. Return results unchanged and let
@@ -87,7 +88,7 @@ store first: the instrumentor's tests can then use it.
 - `delete_run` returns `0` for an unknown run; it must not raise.
 - Return new objects from reads. Callers may mutate them.
 - Evidence and decisions never reach the store. Persist them with an
-  `XAIPlugin` if needed.
+  `XAIPlugin` subclass if needed.
 - psycopg's async mode on Windows needs
   `asyncio.run(main(), loop_factory=asyncio.SelectorEventLoop)`.
 

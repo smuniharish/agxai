@@ -98,7 +98,7 @@ skills, so you can leave them out.
 
     ```text
     PASS  Python 3.15.2 (3.12 or newer required)
-    PASS  agxai 1.0.1 (1.x expected by this skill)
+    PASS  agxai 1.0.2 (1.x expected by this skill)
     PASS  pydantic 2.14.3 (>=2.14.3,<3 required)
     PASS  langgraph 1.2.20 (>=1.2.20,<2 required)
     PASS  langchain-core 1.7.6 (>=1.7.6,<2 required)

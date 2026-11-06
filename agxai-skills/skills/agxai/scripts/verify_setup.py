@@ -21,7 +21,14 @@ from importlib import metadata
 from typing import TYPE_CHECKING, TypedDict
 
 if TYPE_CHECKING:
-    from agxai import ExplanationContext, PolicyAction, PolicyDecision, Run, XAIRuntime
+    from agxai import (
+        ExplanationContext,
+        PolicyAction,
+        PolicyDecision,
+        PolicyProvider,
+        Run,
+        XAIRuntime,
+    )
 
 REQUIRED = {
     "pydantic": ((2, 14, 3), (3,)),
@@ -132,21 +139,28 @@ async def check_core() -> None:
     await runtime.close()
 
 
-class EndUserPolicy:
-    """End users see the outcome and reasons only."""
+def end_user_policy() -> PolicyProvider:
+    from agxai import Audience, PolicyDecision, PolicyProvider
 
-    async def evaluate(self, context: ExplanationContext, action: PolicyAction) -> PolicyDecision:
-        from agxai import Audience, PolicyDecision
+    class EndUserPolicy(PolicyProvider):
+        """End users see the outcome and reasons only."""
 
-        end_user = context.audience == Audience.END_USER
-        return PolicyDecision(
-            context=context.execution.context,
-            policy_id="verify-setup",
-            action=action,
-            allowed=True,
-            audience=context.audience,
-            denied_fields={"contributing_factors", "supporting_evidence"} if end_user else set(),
-        )
+        async def evaluate(
+            self, context: ExplanationContext, action: PolicyAction
+        ) -> PolicyDecision:
+            end_user = context.audience == Audience.END_USER
+            return PolicyDecision(
+                context=context.execution.context,
+                policy_id="verify-setup",
+                action=action,
+                allowed=True,
+                audience=context.audience,
+                denied_fields={"contributing_factors", "supporting_evidence"}
+                if end_user
+                else set(),
+            )
+
+    return EndUserPolicy()
 
 
 def review_graph(runtime: XAIRuntime):
@@ -206,7 +220,7 @@ async def check_recording() -> None:
         f"auditor explanation: {auditor.summary}",
     )
 
-    runtime.register(PolicyProvider, EndUserPolicy())
+    runtime.register(PolicyProvider, end_user_policy())
     customer = await runtime.explain_decision(run.decisions[0], audience=Audience.END_USER, run=run)
     report(
         not customer.contributing_factors

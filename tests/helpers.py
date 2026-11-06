@@ -18,8 +18,10 @@ from agxai import (
     ExecutionContext,
     ExecutionStatus,
     ExplanationContext,
+    ObservabilityProvider,
     ProvenanceStore,
     StoreFilter,
+    XAIPlugin,
     XAIRuntime,
 )
 from agxai.storage import InMemoryProvenanceStore
@@ -138,7 +140,7 @@ class FailingStore(InMemoryProvenanceStore):
         await super().write(item)
 
 
-class RecordingObservability:
+class RecordingObservability(ObservabilityProvider):
     """An observability provider that records every call."""
 
     def __init__(self, *, fail: bool = False, delay: float = 0.0) -> None:
@@ -166,7 +168,7 @@ class RecordingObservability:
             raise ConnectionError("exporter unavailable")
 
 
-class RecordingPlugin:
+class RecordingPlugin(XAIPlugin):
     """A plugin that records artifacts and lifecycle calls, optionally failing."""
 
     def __init__(self, name: str = "plugin", *, fail: bool = False, log: list[str] | None = None):

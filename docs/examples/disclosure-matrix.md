@@ -19,7 +19,7 @@ gives business and end-user audiences the outcome and reasons only:
 RESTRICTED = frozenset({Audience.BUSINESS, Audience.END_USER})
 
 
-class AudienceScopedPolicy:
+class AudienceScopedPolicy(PolicyProvider):
     async def evaluate(self, context: ExplanationContext, action: PolicyAction) -> PolicyDecision:
         restricted = context.audience in RESTRICTED
         return PolicyDecision(

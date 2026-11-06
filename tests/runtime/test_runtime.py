@@ -7,7 +7,6 @@ from typing import Any
 import pytest
 from hypothesis import given
 from hypothesis import strategies as st
-from langgraph.types import Interrupt
 
 from agxai import (
     AttributionEngine,
@@ -30,6 +29,7 @@ from agxai import (
     Registry,
     RetrievedDocument,
     Run,
+    RunInterrupt,
     SourceReference,
     ToolStatus,
     XAIConfig,
@@ -153,9 +153,11 @@ async def test_failed_and_cancelled_runs_record_an_exception(
 async def test_interrupted_runs_record_one_interaction_per_interrupt() -> None:
     runtime = make_runtime()
     run = await runtime.start_run()
-    question = Interrupt(value={"question": "approve?", "password": "hunter2"}, id="interrupt-1")
+    question = RunInterrupt(id="interrupt-1", value={"question": "approve?", "password": "hunter2"})
 
-    await runtime.finish_run(run, interrupts=[question, Interrupt(value="raw", id="interrupt-2")])
+    await runtime.finish_run(
+        run, interrupts=[question, RunInterrupt(id="interrupt-2", value="raw")]
+    )
 
     first, second = run.execution.human_interactions
     assert run.execution.status is ExecutionStatus.INTERRUPTED
@@ -209,7 +211,7 @@ async def test_records_made_after_a_run_finishes_keep_the_stored_execution_curre
     runtime = XAIRuntime(registry=registry)
     run = await runtime.start_run()
     await runtime.record_tool("search", run=run)
-    await runtime.finish_run(run, interrupts=[Interrupt(value="approve?", id="i-1")])
+    await runtime.finish_run(run, interrupts=[RunInterrupt(id="i-1", value="approve?")])
 
     assert store.execution_writes == 2
     approval = await runtime.record_human_interaction("approval", actor_reference="lead", run=run)
@@ -446,7 +448,7 @@ async def test_record_artifact_validates_the_run() -> None:
 
 
 async def test_capture_policy_can_drop_events() -> None:
-    class DenyTransitions:
+    class DenyTransitions(CapturePolicy):
         async def evaluate(self, event) -> PolicyDecision:
             return PolicyDecision(
                 context=event.context,
@@ -474,7 +476,7 @@ async def test_capture_policy_can_drop_events() -> None:
 
 
 async def test_events_whose_capture_policy_fails_are_not_captured() -> None:
-    class BrokenPolicy:
+    class BrokenPolicy(CapturePolicy):
         async def evaluate(self, event) -> PolicyDecision:
             raise RuntimeError("policy backend unavailable")
 
@@ -587,7 +589,7 @@ async def test_explain_reuses_supplied_attribution() -> None:
     runtime = make_runtime()
     calls: list[str] = []
 
-    class CountingAttribution:
+    class CountingAttribution(AttributionEngine):
         async def attribute(self, context):
             calls.append("attribute")
             raise AssertionError("must not be called")
@@ -605,7 +607,7 @@ async def test_llm_gate_fails_fast_before_any_policy_or_model_work() -> None:
     runtime = make_runtime()
     evaluated: list[str] = []
 
-    class RecordingPolicy:
+    class RecordingPolicy(PolicyProvider):
         async def evaluate(self, context, action):
             evaluated.append(action)
             raise AssertionError("must not be called")
@@ -622,9 +624,7 @@ async def test_llm_gate_fails_fast_before_any_policy_or_model_work() -> None:
 async def test_explain_never_returns_an_unfiltered_or_partial_explanation(failing: str) -> None:
     runtime = make_runtime()
 
-    class Broken:
-        requires_llm = False
-
+    class Broken(PolicyProvider, AttributionEngine, ExplanationEngine):
         async def evaluate(self, context, action):
             raise ConnectionError("policy service down")
 

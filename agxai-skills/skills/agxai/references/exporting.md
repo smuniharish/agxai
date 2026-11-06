@@ -5,13 +5,15 @@ Read this file when records must outlive the process or reach a tracing backend.
 ## Persist evidence and decisions with a plugin
 
 Evidence, decisions, and memory references are not written to the store.
-Persist them with a plugin:
+Persist them with a plugin: subclass `XAIPlugin` and implement `record`
+(`flush` and `close` are optional hooks).
 
 ```python
-class DecisionArchive:
+from agxai import XAIPlugin, XAIRuntime
+
+
+class DecisionArchive(XAIPlugin):
     async def record(self, artifact) -> None: ...  # Evidence, Decision, MemoryReference, ...
-    async def flush(self) -> None: ...
-    async def close(self) -> None: ...
 
 
 runtime = XAIRuntime(plugins=(DecisionArchive(),))

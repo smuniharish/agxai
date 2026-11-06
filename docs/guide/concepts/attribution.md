@@ -125,8 +125,9 @@ The factors' absolute scores sum to the 0.7 share, the evidence receives 0.3,
 and the long customer tenure counts against escalation.
 
 To use a different method entirely (for example scores from your own model),
-implement the `AttributionEngine` protocol: one `async def attribute(context)`
-returning an `AttributionResult`. See [Extensibility](../../architecture/plugins.md).
+subclass the `AttributionEngine` abstract base class and implement one
+`async def attribute(context)` returning an `AttributionResult`. See
+[Extensibility](../../architecture/plugins.md).
 
 ## What attribution claims, and what it does not
 

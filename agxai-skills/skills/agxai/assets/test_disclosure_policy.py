@@ -32,7 +32,7 @@ from agxai import (
 SECRET_SCORE = 0.9173
 
 
-class CustomerSafePolicy:
+class CustomerSafePolicy(PolicyProvider):
     """End users see the outcome and reasons; other audiences see everything."""
 
     async def evaluate(self, context: ExplanationContext, action: PolicyAction) -> PolicyDecision:
@@ -48,7 +48,7 @@ class CustomerSafePolicy:
         )
 
 
-class UnavailablePolicy:
+class UnavailablePolicy(PolicyProvider):
     """A policy service that is down."""
 
     async def evaluate(self, context: ExplanationContext, action: PolicyAction) -> PolicyDecision:

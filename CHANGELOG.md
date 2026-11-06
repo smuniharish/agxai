@@ -5,6 +5,36 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.2] - 2026-11-06
+
+### Breaking
+
+Every extension point is now an abstract base class that providers must
+subclass. A class that only has the right methods is rejected, so a missing
+method fails when the provider is defined, not on the first call.
+
+- `ObservabilityProvider`, `CapturePolicy`, `PolicyProvider`,
+  `AttributionEngine`, `ExplanationEngine`, and `XAIPlugin` change from
+  `typing.Protocol` to abstract base classes, like `ProvenanceStore` and
+  `FrameworkInstrumentor` already were. Add the base class to existing
+  providers, for example `class MyPolicy(PolicyProvider):`.
+  `XAIRuntime.register`, `Registry.register`, and `PluginManager` raise
+  `TypeError` for a provider that does not subclass its capability.
+- `ObservabilityProvider` and `XAIPlugin` provide no-op `flush` and `close`,
+  and `ExplanationEngine` defaults `requires_llm` to `False`, so subclasses
+  implement only `emit`, `record`, or `explain`.
+- `agxai.core.protocols` is renamed `agxai.core.contracts`. Imports from
+  `agxai` and `agxai.core` are unchanged.
+- `InterruptLike` is replaced by the `RunInterrupt` value type (`id`,
+  `value`). `XAIRuntime.finish_run(interrupts=...)` takes `RunInterrupt`s;
+  the LangGraph integration converts LangGraph interrupts itself.
+- `Registry.get` no longer re-checks a provider on every lookup; registration
+  already guarantees the type.
+
+### Added
+
+- Python 3.15 is tested and declared.
+
 ## [1.0.1] - 2026-11-06
 
 agxai records what an AI agent did, the evidence it relied on, and the
@@ -103,4 +133,5 @@ a disclosure policy. This release describes the complete public API.
 - Documentation built with Zensical, with a generated API reference, rendered
   architecture diagrams, and a link check over the built site.
 
+[1.0.2]: https://github.com/smuniharish/agxai/releases/tag/v1.0.2
 [1.0.1]: https://github.com/smuniharish/agxai/releases/tag/v1.0.1
