@@ -1,0 +1,25 @@
+{
+  "skill_name": "agxai",
+  "queries": [
+    {"query": "add explainability to my langgraph agent so auditors can see why it routed a loan to manual review", "should_trigger": true, "split": "train"},
+    {"query": "we use agxai; explanations for end users are leaking the internal risk score, fix the policy", "should_trigger": true, "split": "train"},
+    {"query": "record the evidence and the decision in my fraud node and explain it to a business user", "should_trigger": true, "split": "train"},
+    {"query": "my agxai runtime throws RuntimeError: no active run inside a tool", "should_trigger": true, "split": "train"},
+    {"query": "send agxai decision events to langfuse and make sure they flush on shutdown", "should_trigger": true, "split": "train"},
+    {"query": "I need an audit trail of what my LangChain agent decided and on what evidence, for a regulator", "should_trigger": true, "split": "train"},
+    {"query": "after the graph resumes from interrupt() the agxai run isn't linked to the paused one, why?", "should_trigger": true, "split": "validation"},
+    {"query": "show customers a plain-language reason for their declined application but hide the model factors", "should_trigger": true, "split": "validation"},
+    {"query": "explanations from my LangGraph app raise XAIInstrumentationError: exposure policy evaluation failed", "should_trigger": true, "split": "validation"},
+    {"query": "have gpt phrase the agxai explanation instead of the structured template", "should_trigger": true, "split": "validation"},
+    {"query": "write an agxai FrameworkInstrumentor for our CrewAI crew", "should_trigger": false, "split": "train"},
+    {"query": "implement a ProvenanceStore on DynamoDB and make the contract tests pass", "should_trigger": false, "split": "train"},
+    {"query": "set up LangSmith tracing for my LangChain app, I just want latency and token dashboards", "should_trigger": false, "split": "train"},
+    {"query": "make my LangGraph agent print its chain-of-thought before each tool call", "should_trigger": false, "split": "train"},
+    {"query": "compute SHAP values for my XGBoost credit model", "should_trigger": false, "split": "train"},
+    {"query": "add a retry policy to a LangGraph node that calls a flaky API", "should_trigger": false, "split": "train"},
+    {"query": "configure OpenTelemetry auto-instrumentation for my FastAPI service", "should_trigger": false, "split": "validation"},
+    {"query": "use the xAI Grok API from python", "should_trigger": false, "split": "validation"},
+    {"query": "our agxai Postgres store fails ProvenanceStoreContract on delete_run, help", "should_trigger": false, "split": "validation"},
+    {"query": "build a LangGraph supervisor with two worker agents", "should_trigger": false, "split": "validation"}
+  ]
+}

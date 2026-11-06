@@ -2,7 +2,7 @@
 
 Deterministic engines that score how much each decision factor and piece of
 evidence contributed to a decision. `HybridAttribution` is the default. See
-[Attribution](../concepts/attribution.md) for a worked example.
+[Attribution](../guide/concepts/attribution.md) for a worked example.
 
 ```python
 from agxai import AttributionEngine, HybridAttribution, RuleBasedAttribution

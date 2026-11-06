@@ -60,15 +60,6 @@ CREATE TABLE IF NOT EXISTS agxai_records (
 CREATE INDEX IF NOT EXISTS agxai_tenant_time_idx
     ON agxai_records (application_id, tenant_id, timestamp);
 """
-LEGACY_TABLE = "langgraph_xai_records"
-"""The table of the ``langgraph-xai`` store example, keyed by ``record_key = 'type:id'``."""
-_MIGRATE_LEGACY = f"""
-INSERT INTO agxai_records
-    (application_id, tenant_id, run_id, record_type, record_id, timestamp, payload)
-SELECT application_id, tenant_id, run_id, record_type, payload->>'id', timestamp, payload
-FROM {LEGACY_TABLE}
-ON CONFLICT (application_id, tenant_id, run_id, record_type, record_id) DO NOTHING
-"""  # noqa: S608 - only a module constant is interpolated
 _ORDER = "ORDER BY timestamp, COALESCE((payload->>'sequence')::int, -1), payload->>'id'"
 _MODELS: dict[str, type[Execution | ProvenanceLink | XAIEvent]] = {
     model.__name__: model for model in (Execution, ProvenanceLink, *XAIEvent.__subclasses__())
@@ -148,27 +139,6 @@ class PostgresProvenanceStore(ProvenanceStore):
             if self._owns_pool:
                 await self._pool.close()
             raise
-
-    async def migrate_legacy_table(self) -> int:
-        """Move the rows of the ``langgraph-xai`` table into `agxai_records`; return the count.
-
-        Run it once, after `open` created the schema, with a role that owns
-        ``langgraph_xai_records``. In one transaction it locks the old table,
-        copies every row under the new primary key, and drops the old table, so
-        either everything moves or nothing changes. A row whose key already
-        exists in `agxai_records` keeps the newer `agxai_records` version.
-        Returns ``0`` and changes nothing when there is no old table.
-        """
-        async with self._pool.connection() as connection:
-            found = await (
-                await connection.execute("SELECT to_regclass(%s) IS NOT NULL", (LEGACY_TABLE,))
-            ).fetchone()
-            if not found or not found[0]:
-                return 0
-            await connection.execute(f"LOCK TABLE {LEGACY_TABLE} IN ACCESS EXCLUSIVE MODE")
-            moved = (await connection.execute(_MIGRATE_LEGACY)).rowcount
-            await connection.execute(f"DROP TABLE {LEGACY_TABLE}")
-        return moved
 
     async def write(self, item: StoredItem) -> None:
         """Insert or replace ``item``."""

@@ -23,5 +23,5 @@ even if delivery is retried. Every backend receives the same `xai.*`
 correlation attributes, so records can be joined across systems.
 
 New to tracing tools? Start with
-[LangSmith and agxai](langsmith-vs-agxai.md), which explains
+[LangSmith and agxai](why-agxai.md), which explains
 how tracing and explainability complement each other.

@@ -1,15 +1,19 @@
 """Check that agxai is installed and works in this Python environment.
 
-Runs offline and changes nothing. Prints one PASS, FAIL, or INFO line per check
-and exits with status 1 if any check fails:
+Runs offline and changes nothing. Prints one PASS, FAIL, or INFO line per check:
 
-    python scripts/verify_setup.py
+    python scripts/verify_setup.py              # core; LangGraph too when installed
+    python scripts/verify_setup.py --langgraph  # require the LangGraph extra
+    python scripts/verify_setup.py --json       # one JSON object on stdout
+
+Exit codes: 0 every check passed, 1 a check failed.
 """
 
 from __future__ import annotations
 
 import argparse
 import asyncio
+import json
 import platform
 import re
 import sys
@@ -30,10 +34,18 @@ OPTIONAL = ("langsmith", "langfuse", "opentelemetry-sdk", "langchain-openai")
 SCORE = 0.9173
 
 failures: list[str] = []
+results: list[dict[str, str]] = []
+as_json = False
+
+
+def emit(status: str, message: str) -> None:
+    results.append({"status": status, "message": message})
+    if not as_json:
+        print(f"{status}  {message}")
 
 
 def report(passed: bool, message: str) -> bool:
-    print(f"{'PASS' if passed else 'FAIL'}  {message}")
+    emit("PASS" if passed else "FAIL", message)
     if not passed:
         failures.append(message)
     return passed
@@ -85,9 +97,10 @@ def check_environment(*, langgraph: bool) -> bool:
     extras = {name: installed(name) for name in OPTIONAL}
     present = [f"{name} {version}" for name, version in extras.items() if version]
     absent = [name for name, version in extras.items() if not version]
-    print(
-        f"INFO  optional integrations: {', '.join(present) or 'none'}"
-        + (f" (not installed: {', '.join(absent)})" if absent else "")
+    emit(
+        "INFO",
+        f"optional integrations: {', '.join(present) or 'none'}"
+        + (f" (not installed: {', '.join(absent)})" if absent else ""),
     )
     return not failures
 
@@ -239,12 +252,17 @@ async def check_human_in_the_loop() -> None:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description=__doc__)
+    global as_json
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
     parser.add_argument("--langgraph", action="store_true", help="Require the LangGraph extra.")
+    parser.add_argument("--json", action="store_true", help="Print one JSON object to stdout.")
     arguments = parser.parse_args()
+    as_json = arguments.json
     langgraph = arguments.langgraph or installed("langgraph") is not None
     if not langgraph:
-        print('INFO  LangGraph checks skipped; install "agxai[langgraph]" to enable them.')
+        emit("INFO", 'LangGraph checks skipped; install "agxai[langgraph]" to enable them.')
     if check_environment(langgraph=langgraph):
         checks = [check_core]
         if langgraph:
@@ -254,7 +272,11 @@ def main() -> int:
                 asyncio.run(check())
             except Exception as error:  # report every failing check, then the summary
                 report(False, f"{check.__name__}: {type(error).__name__}: {error}")
-    print("All checks passed." if not failures else f"{len(failures)} check(s) failed.")
+    summary = "All checks passed." if not failures else f"{len(failures)} check(s) failed."
+    if as_json:
+        print(json.dumps({"ok": not failures, "summary": summary, "checks": results}, indent=2))
+    else:
+        print(summary)
     return 1 if failures else 0
 
 

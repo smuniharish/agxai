@@ -36,7 +36,7 @@ With `LANGSMITH_TRACING=true`, LangChain traces the graph itself: every node,
 model call, and token count. The adapter adds a second trace for the same call
 that contains the explainability records. Find it by searching the project for
 metadata `xai.run_id`, or by `trace_id` if you pass one in the config. See
-[LangSmith and agxai](langsmith-vs-agxai.md) for how the two
+[LangSmith and agxai](why-agxai.md) for how the two
 complement each other.
 
 ## Lifecycle

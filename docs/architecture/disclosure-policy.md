@@ -14,7 +14,7 @@ pipelines, and what they do and do not protect.
    with `"[not captured]"`. A factor whose name is a credential name keeps no
    value at all. This happens before the canonical record exists, so no
    provider ever sees a credential value. See
-   [Redaction](../concepts/policies.md#redaction).
+   [Redaction](../guide/concepts/policies.md#redaction).
 2. **Capture mode.** `XAIConfig.capture_state` limits which state keys are
    recorded at all: changed keys only, every key, named keys, a custom
    selection, or none.
@@ -68,4 +68,4 @@ pipelines, and what they do and do not protect.
   evaluates capture (`PolicyAction.CAPTURE`) and exposure
   (`PolicyAction.EXPOSE`) policies only, and never deletes records itself.
 
-See [Security](../operations/security.md) for deployment guidance.
+See [Security](../security.md) for deployment guidance.

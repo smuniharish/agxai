@@ -1,63 +1,67 @@
 ---
 name: agxai
-description: Integrate, configure, test, and debug agxai, the framework-agnostic explainability layer for AI agents. Use for LangGraph/LangChain instrumentation, extending Agno, CrewAI, or custom frameworks through the FrameworkInstrumentor ABC, execution records, evidence and decisions, provenance, attribution, disclosure policies, interrupts, and exporting events to LangSmith, Langfuse, OpenTelemetry, or a database. Also use when explanations are missing or failing or runs are not recorded. Do not use to collect model chain-of-thought or replace a tracing tool.
+description: >-
+  Use this skill when adding agxai to a Python AI agent, or when working with
+  agxai already in a project: recording why an agent decided something,
+  explaining decisions to developers, auditors, business users, or end users,
+  provenance and attribution, audit trails, disclosure policies that withhold
+  fields per audience, human-in-the-loop interrupts, and exporting records to
+  LangSmith, Langfuse, OpenTelemetry, or a database. Covers LangGraph and
+  LangChain apps and plain Python agents. Also use it when explanations are
+  missing, leak data, or fail, or when runs are not recorded. Do not use it to
+  build a new framework adapter or storage backend (use agxai-extend), to set
+  up generic tracing with no explanations, or to capture a model's
+  chain-of-thought.
 license: Apache-2.0
-compatibility: Python 3.12 or newer. Installs agxai 1.x from PyPI; LangGraph/LangChain support requires agxai[langgraph]. scripts/verify_setup.py runs offline in the project's Python environment.
+compatibility: >-
+  Python 3.12 or newer. Installs agxai 1.x from PyPI; LangGraph and LangChain
+  support needs agxai[langgraph]. scripts/verify_setup.py runs offline in the
+  project's Python environment.
 metadata:
-  version: "1.0.0"
+  version: "1.0.1"
   documentation: "https://agxai.readthedocs.io"
 ---
 
 # agxai
 
-`agxai` provides a framework-neutral runtime for versioned execution records.
-Its optional LangGraph/LangChain integration captures nodes, state changes,
-tools, retrievers, interrupts, and checkpoints automatically. Developers can
-extend other frameworks through `FrameworkInstrumentor`. Application code records the evidence
-it relied on and the decisions it made. Explanations are built from those
-records for one audience at a time and filtered by a disclosure policy.
+agxai records what an AI agent ran, the evidence it relied on, and the
+decisions it made, then explains each decision to one audience at a time
+through a disclosure policy. Its optional LangGraph/LangChain integration
+captures nodes, state changes, tools, retrievers, interrupts, and checkpoints
+automatically. Application code records evidence and decisions explicitly.
 
-Use this skill to add the existing package to an application. It is not an
-agent framework, a tracing backend, or a way to record model reasoning.
+## Workflow
 
-## Before you change anything
+Copy this checklist and keep it current:
 
-1. From the project's Python environment, run the setup check in this skill's
-   directory:
+```text
+- [ ] 1. verify_setup.py passes
+- [ ] 2. One runtime per application and tenant boundary
+- [ ] 3. The called graph or agent is instrumented
+- [ ] 4. Evidence and decisions recorded where the code decides
+- [ ] 5. Decisions explained, per audience, under a tested policy
+- [ ] 6. Project tests and verify_setup.py pass again
+```
 
-   ```bash
-   python scripts/verify_setup.py
-   ```
-
-   It checks the core offline. When LangGraph is installed it also checks graph
-   capture. Use `--langgraph` to require that optional integration and fail with
-   an installation hint if missing. Fix every `FAIL` line first.
-2. Find the compiled graphs or agents to instrument, any existing
-   `XAIRuntime`, and the tests that cover them.
-3. Pick the matching recipe in [references/RECIPES.md](references/RECIPES.md).
-   Look up exact signatures in [references/API.md](references/API.md).
-
-## Core workflow
-
-1. Install only the integrations you use. The core is `pip install agxai`.
-   The LangGraph/LangChain workflow below needs:
-
-   ```bash
-   pip install "agxai[langgraph]"
-   ```
-
-2. Create one runtime per application and tenant boundary, and instrument the
-   compiled graph. The wrapper is called exactly like the graph.
+1. From the project's Python environment, run this skill's setup check:
+   `python scripts/verify_setup.py`. Fix every `FAIL` line first. It checks
+   the core offline, and graph capture when LangGraph is installed; add
+   `--langgraph` to require it, or `--json` for one JSON object.
+2. Install only what is used: `pip install agxai`, plus `"agxai[langgraph]"`
+   for LangGraph or LangChain. Create one `XAIRuntime` per application and
+   tenant boundary:
 
    ```python
    from agxai import XAIRuntime
 
    runtime = XAIRuntime(application_id="payments", tenant_id="acme-bank", graph_id="fraud-review")
-   graph = runtime.instrument(builder.compile())
+   graph = runtime.instrument(builder.compile())  # called exactly like the graph
    ```
 
+   For a framework other than LangGraph, use or write a
+   `FrameworkInstrumentor`; the `agxai-extend` skill covers writing one.
 3. Inside nodes, tools, or middleware, record why. The `record_*` methods are
-   coroutines; a synchronous node wraps them in `runtime.run_sync(...)`.
+   coroutines; a sync node wraps them in `runtime.run_sync(...)`.
 
    ```python
    evidence = await runtime.record_evidence(
@@ -72,7 +76,7 @@ agent framework, a tracing backend, or a way to record model reasoning.
    )
    ```
 
-4. Keep the run and explain the decision after the call returns:
+4. Keep the run and explain after the call returns:
 
    ```python
    with runtime.collect_runs() as runs:
@@ -81,91 +85,53 @@ agent framework, a tracing backend, or a way to record model reasoning.
    explanation = await runtime.explain_decision(run.decisions[-1], audience=Audience.AUDITOR, run=run)
    ```
 
-5. If different audiences may see different things, register a
-   `PolicyProvider` and test it with
-   [assets/test_disclosure_policy.py](assets/test_disclosure_policy.py).
-6. Run the project's tests, then `python scripts/verify_setup.py` again.
+5. If audiences may see different things, register a `PolicyProvider` and
+   copy `assets/test_disclosure_policy.py` into the project's tests.
+6. Run the project's tests, then `python scripts/verify_setup.py` again. If
+   anything fails, read `runtime.errors`, fix, and repeat. Do not report the
+   task done until this second run passes.
 
-## Extend another framework
+## Read more only when needed
 
-Subclass `FrameworkInstrumentor[Target, Instrumented]` and implement
-`instrument(target)`. Use `async with self.capture():` around an async call,
-or `with self.capture_sync():` for sync calls, and translate public framework
-hooks to the runtime's `record_*` methods. No framework packages are required
-by the ABC. Agno/CrewAI integrations must be written and tested by the developer;
-they are not bundled adapters. `XAIRuntime.instrument()` remains the LangGraph
-shortcut, not a generic dispatcher.
-
-See the custom-framework recipe in
-[references/RECIPES.md](references/RECIPES.md) and the
-[integration guide](https://agxai.readthedocs.io/en/latest/integrations/custom-frameworks/).
+| Task | Read |
+| --- | --- |
+| LangGraph graphs, sync nodes, prebuilt agents, middleware, trace IDs | [references/langgraph.md](references/langgraph.md) |
+| `interrupt`, `Command(resume=...)`, breakpoints, approvals | [references/human-in-the-loop.md](references/human-in-the-loop.md) |
+| Per-audience explanations, LLM-phrased explanations | [references/disclosure.md](references/disclosure.md) |
+| Plugins, LangSmith, Langfuse, OpenTelemetry | [references/exporting.md](references/exporting.md) |
+| `FAIL_OPEN` / `FAIL_CLOSED` / `STRICT`, runs outside any graph | [references/failure-modes.md](references/failure-modes.md) |
+| Exact signatures, settings, records, enumerations | [references/api.md](references/api.md) |
+| An error, a missing run, or an unexpected explanation | [references/troubleshooting.md](references/troubleshooting.md) |
 
 ## Rules
 
 - **Observe, never steer.** Do not change graph inputs, outputs, state, or
   control flow to make recording work.
-- **Record decisions explicitly.** Call `record_decision` where the
-  application decides. Never infer a decision from a trace, and never ask a
-  model for its chain-of-thought.
-- **Let instrumentation create execution records.** Do not build `Execution`,
-  `NodeExecution`, or event models by hand for instrumented calls. Use
-  `start_run` and `finish_run` only for work outside any instrumented graph.
-- **Instrument the runnable you call.** Methods that build a new runnable,
-  such as `graph.with_retry()` or `graph.bind(...)`, return an uninstrumented
-  runnable. `with_config(...)` keeps the instrumentation.
-- **Use the recorded entry points.** `invoke`, `stream`, `batch`,
-  `batch_as_completed`, `astream_events` (v1 and v2), `transform`, and their
-  async forms are recorded. LangGraph's experimental v3 streaming
-  (`stream_events`, `astream_events(version="v3")`) and LangChain's deprecated
-  `astream_log` are not.
+- **Record decisions explicitly** with `record_decision` where the code
+  decides. Never infer them from a trace, and never ask a model for its
+  chain-of-thought.
 - **Keep the policy boundary.** Never weaken a disclosure policy, redaction,
-  or capture settings to make a test or an export pass.
-- **Keep secrets out of records.** Redaction works on key names such as
-  `api_key` or `token`, not on values. Reference people and documents by ID.
-- **Choose the failure mode on purpose.** `FAIL_OPEN`, the default, never
-  breaks the graph and keeps errors in `runtime.errors`. `FAIL_CLOSED` and
-  `STRICT` raise `XAIInstrumentationError`. Explanations fail closed in every
-  mode.
+  or capture setting to make a test or an export pass.
+- **Keep secrets out of records.** Redaction matches key names such as
+  `api_key` or `token`, not values. Reference people and documents by ID.
 
-## Human-in-the-loop
+## Gotchas
 
-Compile the graph with a LangGraph checkpointer and call it with a
-`thread_id`. Interrupts, `Command(resume=...)` answers, static breakpoints,
-and checkpoints are then recorded automatically. A resumed, retried, or
-replayed run names the run it continues in `Execution.continuation_of`.
-Record approvals made outside the graph with `record_human_interaction`, even
-after the run finished. Do not also call `record_checkpoint` for these graphs,
-which would record each checkpoint twice; it is for runs you manage yourself
-or for `XAIConfig(capture_checkpoints=False)`.
-
-## Where records go
-
-- `Execution`, events, and provenance links go to the `ProvenanceStore`, by
-  default `InMemoryProvenanceStore`. To persist them, subclass
-  `ProvenanceStore`.
-- Evidence, decisions, and memory references are kept on `run.evidence` and
-  `run.decisions` and delivered to `XAIPlugin` instances, not to the store.
-- Events can also go to one `ObservabilityProvider`: LangSmith, Langfuse, or
-  OpenTelemetry.
-
-## When something is wrong
-
-Check `runtime.errors` first, then follow
-[references/TROUBLESHOOTING.md](references/TROUBLESHOOTING.md). Common causes:
-
-- `RuntimeError: no active run`: a `record_*` call ran outside an instrumented
-  call. Pass `run=` or record inside the graph.
-- No run was recorded: the call went to the uninstrumented graph, or used an
-  entry point that is not recorded.
-- An explanation raises `XAIInstrumentationError`: the policy, attribution, or
-  engine failed; the cause is in `runtime.errors`.
-
-## References
-
-- [references/API.md](references/API.md): public imports, methods, settings,
-  and records.
-- [references/RECIPES.md](references/RECIPES.md): complete patterns for common
-  integration tasks.
-- [references/TROUBLESHOOTING.md](references/TROUBLESHOOTING.md): symptoms,
-  causes, and fixes.
-- Documentation: <https://agxai.readthedocs.io>
+- `RuntimeError: no active run` means a `record_*` call ran outside an
+  instrumented call. Record inside the graph, or pass `run=`.
+- Only the wrapper returned by `runtime.instrument(...)` records. Methods that
+  build a new runnable, such as `with_retry()` or `bind(...)`, drop the
+  instrumentation; `with_config(...)` keeps it.
+- `invoke`, `stream`, `batch`, `batch_as_completed`, `astream_events` v1 and
+  v2, `transform`, and their async forms are recorded. `stream_events`,
+  `astream_events(version="v3")`, and `astream_log` are not.
+- Do not build `Execution` or event models by hand for instrumented calls. Use
+  `start_run` and `finish_run` only for work outside any instrumented call.
+- The store holds executions, events, and links. Evidence and decisions live
+  on `run.evidence` and `run.decisions` and reach plugins, not the store.
+- `FAIL_OPEN`, the default, never breaks the graph and keeps the last 100
+  errors in `runtime.errors`. Explanations fail closed in every mode and raise
+  `XAIInstrumentationError`.
+- With a checkpointer and a `thread_id`, checkpoints are recorded
+  automatically. Do not also call `record_checkpoint`.
+- Call `await runtime.close()` at shutdown, or batched exports are lost.

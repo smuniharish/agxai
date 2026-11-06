@@ -33,9 +33,10 @@ def guide_program(text: str) -> str:
     ("document", "program"),
     [
         ("README.md", readme_program),
+        ("docs/index.md", readme_program),
         ("docs/getting-started/quickstart.md", guide_program),
     ],
-    ids=["readme", "docs-quickstart"],
+    ids=["readme", "docs-home", "docs-quickstart"],
 )
 def test_quickstart_prints_the_documented_output(
     document: str, program: Callable[[str], str], tmp_path: Path

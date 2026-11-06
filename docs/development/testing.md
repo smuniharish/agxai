@@ -29,7 +29,7 @@ is fixed. Ignores are narrow and name the third-party warning they silence.
 | `tests/storage` | The in-memory store, including a stateful property test and the store conformance kit |
 | `tests/observability` | Every adapter, against the real LangSmith, Langfuse, and OpenTelemetry SDKs |
 | `tests/examples` | Every example script, the PostgreSQL store example, and the README and documentation quickstarts |
-| `tests/skill` | The Agent Skill: the reference validator, links, the setup check, and the test template |
+| `tests/skill` | Both Agent Skills: the reference validator, links, evals, the setup check, the store check, and the templates |
 | `tests/benchmarks` | Performance regression bounds, and a smoke run of the overhead benchmark |
 | `tests/live` | The LLM explanation engine against a real model |
 
@@ -150,7 +150,8 @@ statistical claim about model accuracy.
 ## Documentation
 
 ```bash
-uv run mkdocs build --strict           # fails on broken links and references
+uv run zensical build --strict           # fails on broken links and references
+uv run python scripts/check_site_links.py # also checks links rendered from docstrings
 node scripts/render-diagrams.mjs        # re-render diagrams after editing diagrams/*.mmd
 node scripts/render-diagrams.mjs --check
 ```

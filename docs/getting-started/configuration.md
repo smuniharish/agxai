@@ -29,9 +29,9 @@ runtime.
 | --- | --- | --- |
 | `capture_state` | `DELTA` | How much of each node's state change is recorded; see [State capture](#state-capture). |
 | `capture_fields` | empty | State keys recorded in `SELECTIVE` mode. |
-| `capture_checkpoints` | `True` | For a graph with a checkpointer and a `thread_id`, read the thread's state to record checkpoints, static breakpoints, and `continuation_of`. See [how runs are linked](../how-to/interrupts.md#how-runs-are-linked). |
+| `capture_checkpoints` | `True` | For a graph with a checkpointer and a `thread_id`, read the thread's state to record checkpoints, static breakpoints, and `continuation_of`. See [how runs are linked](../guide/how-to/interrupts.md#how-runs-are-linked). |
 | `failure_mode` | `FAIL_OPEN` | What an instrumentation failure does; see [Failure modes](#failure-modes). |
-| `llm_explanation_enabled` | `False` | Allows an LLM-backed explanation engine to run. See [LLM-phrased explanations](../how-to/llm-explanations.md). |
+| `llm_explanation_enabled` | `False` | Allows an LLM-backed explanation engine to run. See [LLM-phrased explanations](../guide/how-to/llm-explanations.md). |
 | `max_concurrency` | `32` | Instrumentation operations (writes, emits, policy checks, plugin calls) in flight at once, across all threads and event loops. |
 | `operation_timeout_seconds` | `10.0` | Upper bound for one operation, including the wait for a concurrency slot. |
 
@@ -57,7 +57,7 @@ await graph.ainvoke(
 | `metadata["xai_run_id"]` (a UUID) | The run ID, to reuse an ID from your own system. Otherwise a random UUID. |
 | `metadata["trace_id"]` | `trace_id`, for correlation with tracing tools |
 | `configurable["thread_id"]`, `["checkpoint_id"]` | `thread_id` and `checkpoint_id` |
-| Other metadata keys | `ExecutionContext.metadata`, after [redaction](../concepts/policies.md#redaction) |
+| Other metadata keys | `ExecutionContext.metadata`, after [redaction](../guide/concepts/policies.md#redaction) |
 
 Instrumented calls add the run ID to the metadata the graph receives, under
 `RUN_ID_METADATA_KEY` (`"agxai_run_id"`), so nodes can read it and
@@ -95,7 +95,7 @@ after = {"amount": 9200.0, "risk_score": 0.91, "api_key": "sk-live-2", "segment"
 Credential-named keys such as `api_key`, `password`, `authorization`, or
 `session_token` never have their values recorded. `FULL` lists them as
 `[not captured]`, and the other modes leave them out. Values are converted to
-JSON-safe form before storage; see [Redaction](../concepts/policies.md#redaction).
+JSON-safe form before storage; see [Redaction](../guide/concepts/policies.md#redaction).
 
 ## Providers
 
@@ -107,9 +107,9 @@ them with `runtime.register(Protocol, provider)`:
 | `ProvenanceStore` | `InMemoryProvenanceStore` | Your subclass of `ProvenanceStore`, such as the [PostgreSQL store example](../examples/postgres-store.md) |
 | `ObservabilityProvider` | `NoOpObservability` | [LangSmith](../integrations/langsmith.md), [Langfuse](../integrations/langfuse.md), [OpenTelemetry](../integrations/opentelemetry.md) |
 | `CapturePolicy` | `DefaultCapturePolicy` (allows every event) | Your own, to drop events |
-| `PolicyProvider` | `DefaultPolicyProvider` | Your own, to [scope disclosure](../how-to/disclosure-policies.md) |
+| `PolicyProvider` | `DefaultPolicyProvider` | Your own, to [scope disclosure](../guide/how-to/disclosure-policies.md) |
 | `AttributionEngine` | `HybridAttribution` | `EvidenceAttribution`, `RuleBasedAttribution`, your own |
-| `ExplanationEngine` | `StructuredExplanationEngine` | [`LLMExplanationEngine`](../how-to/llm-explanations.md), your own |
+| `ExplanationEngine` | `StructuredExplanationEngine` | [`LLMExplanationEngine`](../guide/how-to/llm-explanations.md), your own |
 
 `XAIPlugin` instances, passed as `XAIRuntime(plugins=(...))`, receive every
 evidence, decision, and memory record as it is created. See
@@ -134,7 +134,7 @@ streaming protocol, counts as a failed operation too; see
 Explanations are the exception. `explain` and `explain_decision` raise
 `XAIInstrumentationError` in every mode when the policy, attribution, or engine
 fails, because a partial or unfiltered explanation is never returned. See
-[Configure failure modes](../how-to/failure-modes.md) for real output.
+[Configure failure modes](../guide/how-to/failure-modes.md) for real output.
 
 ## Credentials
 

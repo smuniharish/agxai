@@ -75,30 +75,6 @@ async def test_open_can_skip_schema_creation_for_restricted_roles() -> None:
     assert pool.statements == []
 
 
-async def test_migrating_without_a_legacy_table_changes_nothing() -> None:
-    pool = FakePool(rows=[(False,)])
-
-    assert await PostgresProvenanceStore("unused", pool=pool).migrate_legacy_table() == 0
-
-    assert pool.statements == [("SELECT to_regclass(%s) IS NOT NULL", ("langgraph_xai_records",))]
-
-
-async def test_migrating_locks_copies_by_the_new_key_and_drops_the_legacy_table() -> None:
-    def responder(params):
-        return [(True,)] if params else [(), (), ()]
-
-    pool = FakePool(responder=responder)
-
-    assert await PostgresProvenanceStore("unused", pool=pool).migrate_legacy_table() == 3
-
-    _, (lock, _), (insert, _), (drop, _) = pool.statements
-    assert lock == "LOCK TABLE langgraph_xai_records IN ACCESS EXCLUSIVE MODE"
-    assert "SELECT application_id, tenant_id, run_id, record_type, payload->>'id'" in insert
-    assert "FROM langgraph_xai_records" in insert
-    assert "DO NOTHING" in insert
-    assert drop == "DROP TABLE langgraph_xai_records"
-
-
 class UnreachablePool(FakePool):
     @asynccontextmanager
     async def connection(self):

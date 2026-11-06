@@ -140,5 +140,5 @@ Resumed: {'amount': 9000.0, 'approved': True}
 - **Late records are stored.** The approval was recorded after the run
   finished, and the stored `Execution` includes it.
 
-See [Handle human-in-the-loop interrupts](../how-to/interrupts.md) for static
+See [Handle human-in-the-loop interrupts](../guide/how-to/interrupts.md) for static
 breakpoints, retries, and replays.

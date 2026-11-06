@@ -808,7 +808,7 @@ class XAIRuntime:
     ) -> Evidence:
         """Record material that supports an upcoming decision.
 
-        See [Concepts: Evidence](../concepts/evidence.md). Raw content is
+        See [Concepts: Evidence](../guide/concepts/evidence.md). Raw content is
         referenced through ``content_reference``, never embedded.
 
         Args:
@@ -859,8 +859,8 @@ class XAIRuntime:
     ) -> Decision:
         """Record the action an application selected, and on what basis.
 
-        See [Concepts: Decisions](../concepts/decisions.md) and
-        [Concepts: Attribution](../concepts/attribution.md) for how ``factors``
+        See [Concepts: Decisions](../guide/concepts/decisions.md) and
+        [Concepts: Attribution](../guide/concepts/attribution.md) for how ``factors``
         and ``evidence_ids`` feed attribution.
 
         Args:
@@ -1055,7 +1055,7 @@ class XAIRuntime:
     ) -> ProvenanceLink:
         """Record a provenance edge from an upstream ``source`` to a downstream ``target``.
 
-        See [Concepts: Provenance](../concepts/provenance.md); walk the edges
+        See [Concepts: Provenance](../guide/concepts/provenance.md); walk the edges
         later with ``store.parents``, ``store.children``, and ``store.lineage``.
 
         Args:
@@ -1119,7 +1119,7 @@ class XAIRuntime:
         `PolicyProvider` for ``PolicyAction.EXPOSE``, (3) runs `attribute` if
         ``context.attribution`` is ``None``, and (4) renders the result with the
         registered `ExplanationEngine`. See
-        [Concepts: Explanations](../concepts/explanations.md).
+        [Concepts: Explanations](../guide/concepts/explanations.md).
 
         Raises:
             XAIInstrumentationError: If the LLM gate is closed, or the exposure

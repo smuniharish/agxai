@@ -4,7 +4,7 @@ build-backend = "uv_build"
 
 [project]
 name = "agxai"
-version = "1.0.0"
+version = "1.0.1"
 description = "A provider-neutral, framework-agnostic explainability layer for AI agents."
 readme = "README.md"
 requires-python = ">=3.12"
@@ -77,11 +77,8 @@ lint = ["ruff>=0.17.3"]
 types = ["pyrefly>=1.4.1"]
 docs = [
   "griffe-pydantic>=1.3.2,<2",
-  "mkdocs>=1.6.1,<2",
-  "mkdocs-glightbox>=0.5.3,<1",
-  "mkdocs-material>=9.8.0,<10",
-  "mkdocstrings[python]>=1.0.8,<2",
   "mkdocstrings-python>=2.0.10,<3",
+  "zensical>=0.1.0,<0.2",
 ]
 dev = [
   { include-group = "test" },
@@ -160,6 +157,7 @@ convention = "google"
 "tests/**/*.py" = ["A002", "ARG", "D", "S101", "S105", "S106", "S108"]
 "agxai-skills/**/scripts/*.py" = ["ARG", "D", "T201"]
 "agxai-skills/**/assets/*.py" = ["ARG", "D"]
+"agxai-skills/**/evals/files/**/*.py" = ["ARG", "D", "T201"]
 "src/agxai/integrations/langgraph/graph.py" = ["A002"]
 # LangChain calls the handlers with its full callback signatures.
 "src/agxai/integrations/langgraph/callbacks.py" = ["ARG002"]
@@ -169,7 +167,7 @@ docstring-code-format = true
 
 [tool.pyrefly]
 project-includes = ["src", "tests", "examples", "scripts", "agxai-skills"]
-search-path = ["src", ".", "examples"]
+search-path = ["src", ".", "examples", "agxai-skills/skills/agxai-extend/assets"]
 
 # LangGraph bounds StateGraph's state type with protocols that pyrefly does not yet
 # match against TypedDict classes; the package itself never specializes StateGraph.

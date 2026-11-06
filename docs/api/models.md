@@ -3,7 +3,7 @@
 Every record is a Pydantic v2 model with a `schema_version`. Unknown fields are
 rejected, numbers must be finite, and timestamps must be timezone-aware. See
 [Canonical model](../architecture/canonical-model.md) for the rules and
-[Concepts](../concepts/index.md) for what each record means. All classes on
+[Concepts](../guide/concepts/index.md) for what each record means. All classes on
 this page are importable from `agxai.core`; the most common ones are
 also importable from `agxai`.
 

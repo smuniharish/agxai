@@ -2,8 +2,7 @@
 
 This guide uses the optional LangGraph integration to instrument a two-node
 fraud-review graph, record its evidence and decision, and explain that decision
-to an auditor. It takes about
-five minutes and needs no external services.
+to an auditor. It takes about five minutes and needs no external services.
 
 ## Requirements
 
@@ -25,24 +24,8 @@ five minutes and needs no external services.
     uv add "agxai[langgraph]"
     ```
 
-Optional integrations are installed as extras, for example
-`pip install "agxai[langgraph,langsmith,otel]"`:
-
-| Extra | Adds | Used by |
-| --- | --- | --- |
-| `langgraph` | `langgraph`, `langchain-core` | [LangGraph/LangChain instrumentation](../integrations/langgraph.md) |
-| `langsmith` | `langsmith` | [`LangSmithObservability`](../integrations/langsmith.md) |
-| `langfuse` | `langfuse` | [`LangfuseObservability`](../integrations/langfuse.md) |
-| `otel` | `opentelemetry-api`, `opentelemetry-sdk` | [`OpenTelemetryObservability`](../integrations/opentelemetry.md) |
-| `llm-openai` | `langchain-openai` | [LLM-phrased explanations](../how-to/llm-explanations.md) |
-| `all` | Every integration above | |
-
-Storage needs no extra. Records are kept in memory by default, and a database
-is used by subclassing `ProvenanceStore`, as in the
-[PostgreSQL store example](../examples/postgres-store.md).
-
-`pip install agxai` installs just the framework-neutral core and Pydantic.
-For another agent framework, see [Custom frameworks](../integrations/custom-frameworks.md).
+For other extras, and for using agxai without LangGraph, see
+[Installation](installation.md).
 
 ## 1. Create a runtime
 
@@ -182,7 +165,7 @@ so the evidence lands in the run of the graph call that executes the node.
 ## Next steps
 
 - Withhold internal scores from end users with a
-  [disclosure policy](../how-to/disclosure-policies.md).
+  [disclosure policy](../guide/how-to/disclosure-policies.md).
 - Keep records in your database by subclassing `ProvenanceStore`, as in the
   [PostgreSQL store example](../examples/postgres-store.md), or forward them
   to [LangSmith](../integrations/langsmith.md),
@@ -190,4 +173,4 @@ so the evidence lands in the run of the graph call that executes the node.
   [OpenTelemetry](../integrations/opentelemetry.md).
 - Choose how much state to capture and how failures behave in
   [Configuration](configuration.md).
-- Learn the data model in [Concepts](../concepts/index.md).
+- Learn the data model in [Concepts](../guide/concepts/index.md).

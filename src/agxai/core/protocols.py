@@ -186,7 +186,7 @@ class ObservabilityProvider(Protocol):
 class AttributionEngine(Protocol):
     """Scores which factors and evidence contributed to a decision, and by how much.
 
-    See [Concepts: Attribution](../concepts/attribution.md) for the output shape
+    See [Concepts: Attribution](../guide/concepts/attribution.md) for the output shape
     and what an `AttributionResult` does and does not claim.
     """
 
@@ -214,7 +214,7 @@ class ExplanationEngine(Protocol):
 class PolicyProvider(Protocol):
     """Decides what an audience may see when an explanation is exposed.
 
-    See [Concepts: Policies](../concepts/policies.md) for a real `PolicyDecision`
+    See [Concepts: Policies](../guide/concepts/policies.md) for a real `PolicyDecision`
     and how the explanation engines honor it.
     """
 

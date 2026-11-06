@@ -20,7 +20,7 @@ numbers the run's events.
 - **`record_*` methods** create one canonical record each. Execution records
   (nodes, state changes, tools, retrievals, checkpoints, human interactions)
   are added to the `Execution` and emitted as events, unless the
-  [capture policy](../concepts/policies.md#capture-policy) drops them. Semantic
+  [capture policy](../guide/concepts/policies.md#capture-policy) drops them. Semantic
   records (evidence, decisions, memory references) are kept on the run and
   delivered to plugins.
 - **`finish_run(run, error, cancelled=..., interrupts=..., pending_nodes=...)`**

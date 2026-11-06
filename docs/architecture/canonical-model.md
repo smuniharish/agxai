@@ -3,7 +3,7 @@
 Every record `agxai` produces is a canonical model: a Pydantic v2 model
 whose JSON form is a stable, versioned contract. Stores persist it,
 observability adapters export it, and explanation engines read it. This page
-lists the models and the rules they follow. [Concepts](../concepts/index.md)
+lists the models and the rules they follow. [Concepts](../guide/concepts/index.md)
 explains what they mean.
 
 ![How the canonical records reference each other](../assets/diagrams/artifact-lineage.png)
@@ -104,6 +104,3 @@ When you upgrade:
 - Models reject fields they do not know, so a record written by a newer
   release can fail validation in an older one. Upgrade the services that read
   records before, or together with, the services that write them.
-- Records written by 0.1.0 (schema `"1.0.0"`) are not readable by 1.x. The
-  [changelog](https://github.com/smuniharish/agxai/blob/master/CHANGELOG.md)
-  lists every field that changed.

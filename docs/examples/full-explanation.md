@@ -246,7 +246,7 @@ Route: HUMAN_REVIEW  (run 4fdefdf9-32f3-4990-bf06-a01fc592c9bc, status completed
 - **The auditor sees why.** `fraud_risk_score` contributes 0.40 (its 0.8
   weight times the factors' 0.5 share). The two pieces of evidence share the
   other half in proportion to their strength. See
-  [Attribution](../concepts/attribution.md).
+  [Attribution](../guide/concepts/attribution.md).
 - **The customer sees what, and is told what is withheld.** The fraud score
   appears nowhere in the end-user explanation, not even in `reasons`, and
   `disclosure` states which sections were withheld and why.

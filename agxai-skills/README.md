@@ -1,47 +1,67 @@
-# agxai Agent Skill
+# agxai Agent Skills
 
-This directory distributes the `agxai` Agent Skill: instructions,
-references, a setup check, and a test template that teach coding agents to
-integrate the `agxai` package correctly. It is not part of the Python
-package and adds no runtime behavior.
+This directory distributes two Agent Skills that teach coding agents to use
+the `agxai` package correctly. They are not part of the Python package and add
+no runtime behavior.
 
-It covers the framework-neutral core, optional `agxai[langgraph]` support,
-and extending other frameworks through the `FrameworkInstrumentor` ABC.
+| Skill | Use it to |
+| --- | --- |
+| [`agxai`](skills/agxai/SKILL.md) | Add agxai to an application: instrument LangGraph or LangChain, record evidence and decisions, write disclosure policies, handle human-in-the-loop, export to tracing backends, and troubleshoot |
+| [`agxai-extend`](skills/agxai-extend/SKILL.md) | Extend agxai: write a `FrameworkInstrumentor` for another agent framework, or a `ProvenanceStore` for a database |
+
+Install both with the [skills CLI](https://github.com/vercel-labs/skills),
+which finds them through [`skills.sh.json`](../skills.sh.json):
+
+```bash
+npx skills add smuniharish/agxai                    # both
+npx skills add smuniharish/agxai --skill agxai      # one
+```
+
+Other ways to install are in the
+[documentation](https://agxai.readthedocs.io/en/latest/agent-skills/install/).
 
 ## Layout
 
-| Path | Contents |
-| --- | --- |
-| [`skills/agxai/SKILL.md`](skills/agxai/SKILL.md) | When to use the skill, the core workflow, and the rules an integration follows |
-| [`skills/agxai/references/`](skills/agxai/references/) | `API.md`, `RECIPES.md`, and `TROUBLESHOOTING.md`, read when a task needs them |
-| [`skills/agxai/scripts/verify_setup.py`](skills/agxai/scripts/verify_setup.py) | Offline core check; also checks LangGraph when installed (`--langgraph` to require it) |
-| [`skills/agxai/assets/test_disclosure_policy.py`](skills/agxai/assets/test_disclosure_policy.py) | A pytest template for testing an application's disclosure policy |
-| [`validation/`](validation/) | How the skill is validated and reviewed |
+Each skill follows the [Agent Skills specification](https://agentskills.io/specification):
+
+```text
+skills/<skill>/
+├── SKILL.md      # frontmatter, workflow, rules, gotchas, links to every file
+├── references/   # focused documents, one level deep, read only when a task needs them
+├── scripts/      # offline checks with --help, --json, and meaningful exit codes
+├── assets/       # templates the agent copies into the project, each with its tests
+└── evals/        # evals.json, trigger_queries.json, and the input files they use
+```
+
+| Skill | Scripts | Assets |
+| --- | --- | --- |
+| `agxai` | `verify_setup.py`: core check offline; LangGraph too when installed (`--langgraph` to require it) | `test_disclosure_policy.py` |
+| `agxai-extend` | `check_store.py`: runs `ProvenanceStoreContract` against any store factory | `instrumentor_template.py`, `test_instrumentor.py`, `store_template.py`, `test_store_contract.py` |
+
+Every Agent Skills host reads the same directories, so there is no separate
+copy for Claude Code, Codex, Cursor, or GitHub Copilot.
 
 ## Format
 
-The skill follows the [Agent Skills specification](https://agentskills.io/specification):
+- `name` matches the directory. The `description` starts with "Use this skill
+  when", names near misses, and hands over to the other skill where they
+  meet.
+- `license`, `compatibility`, and `metadata.version` are set. The version
+  equals the `agxai` release the skill describes.
+- `SKILL.md` stays short and links every reference with the task that needs
+  it. Scripts and assets are referenced by paths relative to the skill
+  directory.
 
-- The `SKILL.md` frontmatter has `name`, which matches the directory, and
-  `description`, `license`, `compatibility`, and `metadata.version`. The
-  version equals the `agxai` release the skill describes.
-- `SKILL.md` stays short. Details live in `references/`, one level deep, so an
-  agent loads them only when a task needs them.
-- Scripts and assets are referenced by paths relative to the skill directory.
-
-Every Agent Skills host reads the same directory, so there is no separate copy
-for Claude Code, Codex, Cursor, or GitHub Copilot. Installation is described in
-the [documentation](https://agxai.readthedocs.io/en/latest/agent-skills/).
-
-## Maintaining the skill
+## Maintaining the skills
 
 When the public API or documented behavior changes:
 
-1. Update the affected part of the skill, and `metadata.version` with each
+1. Update the affected skill, and `metadata.version` in both skills with each
    release.
 2. Check every changed snippet and claim against the code, tests, or
    documentation. Leave out anything that is not implemented.
-3. Run the checks in [`validation/README.md`](validation/README.md).
+3. Add or update an eval when the change affects what an agent should do.
+4. Run the checks in [`validation/README.md`](validation/README.md).
 
-The skill is covered by the repository's Apache License 2.0; see
+The skills are covered by the repository's Apache License 2.0; see
 [LICENSE](../LICENSE).

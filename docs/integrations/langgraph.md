@@ -82,7 +82,7 @@ instead of starting a new one.
   `interrupted`, with one interaction per interrupt, and `Command(resume=...)`
   records the answer. A static breakpoint (`interrupt_before` or
   `interrupt_after`) is recorded as an interrupt with the pending nodes. See
-  [interrupts](../how-to/interrupts.md).
+  [interrupts](../guide/how-to/interrupts.md).
 - **Parent commands.** `Command(graph=Command.PARENT, ...)` from a subgraph
   completes the node instead of failing it.
 - **Tools and retrievers.** Any LangChain tool or retriever called during the
@@ -101,7 +101,7 @@ To make this work across processes, the graph receives the run ID in its config
 metadata under `RUN_ID_METADATA_KEY` (`"agxai_run_id"`), and LangGraph
 stores it in the metadata of every checkpoint the run writes. Set
 `XAIConfig(capture_checkpoints=False)` to skip the state reads this needs. See
-[how runs are linked](../how-to/interrupts.md#how-runs-are-linked).
+[how runs are linked](../guide/how-to/interrupts.md#how-runs-are-linked).
 
 ## Inside nodes
 

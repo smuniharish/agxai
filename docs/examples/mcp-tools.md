@@ -57,4 +57,4 @@ Agent: Example Domain
   name, outcome, latency, and the model's `tool_call_id`.
 - **Page content is not recorded.** Tool arguments and results stay out of the
   record. Record what a result showed as evidence when a decision relies on it;
-  see [Capture MCP tool calls](../how-to/mcp-tools.md).
+  see [Capture MCP tool calls](../guide/how-to/mcp-tools.md).

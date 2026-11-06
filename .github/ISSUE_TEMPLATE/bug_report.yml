@@ -14,7 +14,7 @@ body:
     attributes:
       label: agxai version
       description: Output of `python -c "import agxai; print(agxai.__version__)"`, if available, or the pinned version in your lockfile.
-      placeholder: "0.1.0"
+      placeholder: "1.0.1"
     validations:
       required: true
 

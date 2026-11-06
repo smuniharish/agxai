@@ -1,0 +1,25 @@
+{
+  "skill_name": "agxai-extend",
+  "queries": [
+    {"query": "write an agxai FrameworkInstrumentor for our CrewAI crew so each kickoff is recorded", "should_trigger": true, "split": "train"},
+    {"query": "implement an agxai ProvenanceStore on DynamoDB", "should_trigger": true, "split": "train"},
+    {"query": "our agxai postgres store fails ProvenanceStoreContract on delete_run, help", "should_trigger": true, "split": "train"},
+    {"query": "make agxai work with Agno agents; record each tool call", "should_trigger": true, "split": "train"},
+    {"query": "persist agxai provenance links in MongoDB instead of memory", "should_trigger": true, "split": "train"},
+    {"query": "with my custom agxai instrumentor every nested agent call starts a new run instead of joining the outer one", "should_trigger": true, "split": "train"},
+    {"query": "I wrote a SQLite store for agxai, how do I test it properly?", "should_trigger": true, "split": "validation"},
+    {"query": "adapt agxai to our in-house agent loop that exposes on_step callbacks", "should_trigger": true, "split": "validation"},
+    {"query": "store agxai executions and events in Redis with tenant isolation", "should_trigger": true, "split": "validation"},
+    {"query": "publish an agxai adapter package for Semantic Kernel", "should_trigger": true, "split": "validation"},
+    {"query": "instrument my LangGraph graph with agxai and explain the routing decision", "should_trigger": false, "split": "train"},
+    {"query": "hide the risk score from end users in agxai explanations", "should_trigger": false, "split": "train"},
+    {"query": "send agxai events to Langfuse", "should_trigger": false, "split": "train"},
+    {"query": "write a CrewAI crew with a researcher and a writer agent", "should_trigger": false, "split": "train"},
+    {"query": "design a PostgreSQL schema for an orders service", "should_trigger": false, "split": "train"},
+    {"query": "add a LangChain callback handler that logs token usage", "should_trigger": false, "split": "train"},
+    {"query": "configure the LangGraph Postgres checkpointer", "should_trigger": false, "split": "validation"},
+    {"query": "my agxai explanation raises XAIInstrumentationError in a LangGraph app", "should_trigger": false, "split": "validation"},
+    {"query": "write an abstract base class for repositories in my Django project", "should_trigger": false, "split": "validation"},
+    {"query": "set up OpenTelemetry tracing for an Agno agent", "should_trigger": false, "split": "validation"}
+  ]
+}

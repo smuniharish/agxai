@@ -20,7 +20,8 @@ uv run ruff check .
 uv run ruff format --check .
 uv run pyrefly check
 uv run pytest --cov=agxai --cov-branch
-uv run mkdocs build --strict
+uv run zensical build --strict
+uv run python scripts/check_site_links.py
 node scripts/render-diagrams.mjs --check
 ```
 

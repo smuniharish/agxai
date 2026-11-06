@@ -136,24 +136,6 @@ Every query filters on the application and tenant. `get`, provenance queries,
 and `delete_run` also filter on the run and use the primary key's leading
 columns; tenant-wide queries use `agxai_tenant_time_idx`.
 
-## Upgrading from `langgraph-xai`
-
-The `langgraph-xai` version of this example kept records in
-`langgraph_xai_records`, keyed by `record_key` (`"type:id"`) alone. Move them
-into `agxai_records` once, after `open()`:
-
-```python
-await store.open()
-moved = await store.migrate_legacy_table()
-```
-
-In one transaction, `migrate_legacy_table` locks the old table, copies every
-row under the new primary key, and drops the old table, so either every row
-moves or nothing changes. It returns the number of rows moved, and `0` when
-there is no old table, so it is safe to leave in a deployment script. Run it
-with a role that owns `langgraph_xai_records`, and stop old application
-instances first, because the lock blocks their writes.
-
 ## Operating it
 
 - **Credentials.** The DSN is used to connect and is never written into
@@ -174,8 +156,7 @@ instances first, because the lock blocks their writes.
 
 The store's unit tests run against a fake connection pool. The live tests run
 the [store conformance kit](../architecture/storage.md#testing-a-store) against
-a real server, migrate a real `langgraph-xai` table (including a failed
-migration that must change nothing), persist an instrumented graph run end to
-end, and run this demo. Set
+a real server, persist an instrumented graph run end to end, and run this
+demo. Set
 `XAI_TEST_POSTGRES_DSN` to a disposable database to run them; see
 [Testing](../development/testing.md).

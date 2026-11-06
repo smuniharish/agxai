@@ -1,5 +1,7 @@
 # agxai API at a glance
 
+Read this file for exact signatures, settings, record fields, and enumerations.
+
 Everything below is importable from `agxai` unless a module is named.
 Names that start with an underscore are private. Full reference:
 <https://agxai.readthedocs.io/en/latest/api/>.
@@ -7,9 +9,10 @@ Names that start with an underscore are private. Full reference:
 ## Contents
 
 - [Runtime](#runtime)
+- [Custom frameworks](#custom-frameworks)
+- [Recording](#recording)
 - [Configuration](#configuration)
 - [Instrumented graphs](#instrumented-graphs)
-- [Custom frameworks](#custom-frameworks)
 - [Runs](#runs)
 - [Records](#records)
 - [Enumerations](#enumerations)
@@ -48,19 +51,11 @@ Instrumentation and runs:
 
 ## Custom frameworks
 
-`FrameworkInstrumentor[Target, Instrumented]` is an ABC exported from `agxai`
-and `agxai.integrations`. Pass a runtime at construction, implement
-`instrument(target)`, and wrap the call in `capture(config=None)` (async) or
-`capture_sync(config=None)` (sync). Helpers activate and finish runs and reuse
-the active run for nested calls. Translate framework events to recording
-methods. Agno and CrewAI adapters are developer-written, not bundled.
+`FrameworkInstrumentor` is covered by the `agxai-extend` skill. `agxai.integrations.langgraph` exports `LangGraphInstrumentor` and `InstrumentedGraph` and requires `agxai[langgraph]`; `XAIRuntime.instrument()` delegates to it.
 
-`agxai.integrations.langgraph` exports `LangGraphInstrumentor` (an ABC
-implementation) and `InstrumentedGraph`. They require `agxai[langgraph]`.
-`XAIRuntime.instrument()` lazily delegates to this integration; it is not a
-generic framework dispatcher.
+## Recording
 
-Recording. Every method is a coroutine, accepts `run=` (default: `current_run`),
+Every method is a coroutine, accepts `run=` (default: `current_run`),
 and returns the record it created:
 
 | Method | Records |

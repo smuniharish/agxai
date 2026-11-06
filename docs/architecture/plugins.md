@@ -93,7 +93,7 @@ Keep these contracts, and the runtime's guarantees hold for your provider too:
 - **Capture policies** run once per event, so keep them fast. Return a
   `PolicyDecision` with `action=PolicyAction.CAPTURE`.
 - **Exposure policies** return a `PolicyDecision` with
-  `action=PolicyAction.EXPOSE`; see [Policies](../concepts/policies.md#exposure-policy)
+  `action=PolicyAction.EXPOSE`; see [Policies](../guide/concepts/policies.md#exposure-policy)
   for how its fields are applied.
 - **Attribution engines** return an `AttributionResult` whose `subject_id` is
   the decision's ID. Signed scores, normalized to an absolute sum of 1, keep

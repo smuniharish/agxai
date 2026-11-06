@@ -1,0 +1,44 @@
+{
+  "skill_name": "agxai-extend",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "toy_agent.py is our in-house agent framework. Write an agxai instrumentor for it so every `arun` or `run` call becomes one agxai run and every tool reported through `on_tool_end` is recorded. Add tests.",
+      "expected_output": "A FrameworkInstrumentor subclass whose instrument() returns a wrapper exposing arun (inside capture) and run (inside capture_sync), forwarding other attributes, plus an on_tool_end hook translating tool events to record_tool, and pytest tests covering results, failures, nesting, and recorded tools.",
+      "files": ["files/toy_agent/toy_agent.py"],
+      "assertions": [
+        "Subclasses agxai FrameworkInstrumentor and implements instrument()",
+        "arun is wrapped in `async with self.capture(...)` and run in `with self.capture_sync(...)`",
+        "The wrapper returns the agent's result unchanged and lets exceptions propagate",
+        "Tool events from on_tool_end are translated to runtime.record_tool with a status and latency",
+        "Does not use XAIRuntime.instrument() for the custom agent",
+        "Tests assert one completed run per call and a failed run when a tool raises"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Persist agxai records in SQLite using aiosqlite instead of memory. Give me the store class and the tests that prove it is correct.",
+      "expected_output": "A ProvenanceStore subclass with one table keyed by application, tenant, run, record type, and record ID; idempotent upserts; run-scoped get/parents/children/delete_run; query ordered by timestamp, sequence, id with subclass-aware type filtering; and a ProvenanceStoreContract subclass whose make_store returns an empty store.",
+      "files": [],
+      "assertions": [
+        "Subclasses agxai ProvenanceStore and implements write, get, query, parents, children, and delete_run",
+        "The primary key or unique constraint includes application, tenant, run, record type, and record ID",
+        "write is an upsert (INSERT ... ON CONFLICT ... DO UPDATE or INSERT OR REPLACE)",
+        "query filters item_type including subclasses, so XAIEvent matches every event",
+        "delete_run returns the number of deleted records and 0 for an unknown run",
+        "Tests subclass agxai.testing.ProvenanceStoreContract and implement make_store returning an empty store"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Our custom agxai store fails `test_query_filters_by_run_and_record_type_including_subclasses`: querying with item_type=XAIEvent returns nothing. Our query does `WHERE record_type = :item_type.__name__`. Why, and what's the fix?",
+      "expected_output": "Explains that item_type must match subclasses and stored rows carry concrete event class names, so an exact name match on the base class finds nothing; fixes it by expanding item_type to every stored model name that is a subclass and filtering with IN / ANY.",
+      "files": [],
+      "assertions": [
+        "Identifies that rows store concrete subclass names while the filter passes the XAIEvent base class",
+        "Proposes expanding item_type to the set of subclass names (issubclass over the model map) and filtering with IN or ANY",
+        "Recommends rerunning ProvenanceStoreContract or scripts/check_store.py to confirm"
+      ]
+    }
+  ]
+}

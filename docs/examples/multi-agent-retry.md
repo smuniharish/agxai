@@ -92,5 +92,5 @@ Daily brief for ACME: ACME: last=142.10, change=+1.4%
 - **One identity for everything.** All nine stored records share the run ID and
   the trace ID passed in the config. A tracing backend can join them through
   the `xai.run_id` and `xai.trace_id` attributes.
-- See [Correlate multi-agent runs and retries](../how-to/multi-agent.md) for
+- See [Correlate multi-agent runs and retries](../guide/how-to/multi-agent.md) for
   node retries, nested agents, and correlation across services.

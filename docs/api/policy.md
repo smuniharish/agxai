@@ -1,7 +1,7 @@
 # Policies
 
 The default capture and exposure policies, and the redaction helpers applied to
-every free-form value. See [Policies](../concepts/policies.md) for how they fit
+every free-form value. See [Policies](../guide/concepts/policies.md) for how they fit
 together and how to write your own.
 
 ```python

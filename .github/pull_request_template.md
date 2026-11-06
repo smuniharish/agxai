@@ -26,7 +26,7 @@ it helps reviewers understand and validate your change quickly.
 - [ ] `uv run ruff check .` and `uv run ruff format --check .` pass.
 - [ ] `uv run pyrefly check` passes.
 - [ ] `uv run pytest --cov=agxai --cov-branch` passes with 100% coverage.
-- [ ] `uv run mkdocs build --strict` passes, and diagrams were re-rendered if
+- [ ] `uv run zensical build --strict` and `uv run python scripts/check_site_links.py` pass, and diagrams were re-rendered if
       a `diagrams/*.mmd` source changed.
 - [ ] Relevant docs under `docs/` were updated (if this changes public API,
       configuration, or behavior).

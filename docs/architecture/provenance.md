@@ -2,7 +2,7 @@
 
 Provenance links form a directed graph from source entities to the entities
 derived from them. This page describes how that graph is stored and walked.
-[Concepts: Provenance](../concepts/provenance.md) covers how to record it.
+[Concepts: Provenance](../guide/concepts/provenance.md) covers how to record it.
 
 ## Identity
 

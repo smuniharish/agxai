@@ -11,7 +11,7 @@ installed with `agxai[langgraph]`.
 
 ## Before opening a change
 
-1. Read the [architecture overview](docs/architecture/overview.md).
+1. Read the [architecture overview](docs/architecture/index.md).
 2. Open an issue first for changes to the public API, the canonical schema,
    disclosure behavior, or an integration.
 3. Keep each change focused, with tests and documentation for anything a user
@@ -39,7 +39,8 @@ Never commit credentials, local environments, or generated reports.
 ## Documentation and diagrams
 
 ```bash
-uv run mkdocs build --strict
+uv run zensical build --strict
+uv run python scripts/check_site_links.py
 ```
 
 Diagrams are Mermaid sources under [`diagrams/`](diagrams), rendered to PNG
@@ -70,9 +71,10 @@ updated `docs/assets/diagrams/manifest.json`.
 
 Releases follow [semantic versioning](https://semver.org/). To publish one:
 
-1. Set the version in `pyproject.toml` and the Agent Skill's
-   `metadata.version` in `agxai-skills/skills/agxai/SKILL.md`,
-   then run `uv lock`. A test fails until the two versions match.
+1. Set the version in `pyproject.toml` and `metadata.version` in both Agent
+   Skills, `agxai-skills/skills/agxai/SKILL.md` and
+   `agxai-skills/skills/agxai-extend/SKILL.md`, then run `uv lock`. A test
+   fails until the versions match.
 2. Move the changelog entries under a heading with the version and date.
 3. Merge to `master`, then publish a GitHub release whose tag is the version
    with a `v` prefix, such as `v1.0.0`.

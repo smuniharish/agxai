@@ -93,4 +93,4 @@ end_user   audience-scoped  llm              0        0  Manual review  [2.03s]
 - **The model phrases, it does not decide.** Its summaries vary in wording, but
   attribution and evidence counts are identical to the deterministic engine's.
 - **Run it in CI.** The assertions make the script a regression test for your
-  policies; see [Test disclosure policies](../how-to/disclosure-policies.md).
+  policies; see [Test disclosure policies](../guide/how-to/disclosure-policies.md).

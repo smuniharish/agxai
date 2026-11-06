@@ -2,8 +2,8 @@
 
 Engines that render an `Explanation` from a policy-filtered
 `ExplanationContext`. The structured engine is the default. See
-[Explanations](../concepts/explanations.md) and
-[LLM-phrased explanations](../how-to/llm-explanations.md).
+[Explanations](../guide/concepts/explanations.md) and
+[LLM-phrased explanations](../guide/how-to/llm-explanations.md).
 
 ```python
 from agxai import ExplanationEngine, LLMExplanationEngine, XAIConfig, XAIRuntime

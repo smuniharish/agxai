@@ -19,9 +19,9 @@ examples also run in the test suite, so they keep working.
 
 Two more scripts back the documentation: the
 [canonical model gallery](https://github.com/smuniharish/agxai/blob/master/examples/canonical_model_gallery.py)
-prints every record type for the [Concepts](../concepts/index.md) pages, and
+prints every record type for the [Concepts](../guide/concepts/index.md) pages, and
 [`failure_modes.py`](https://github.com/smuniharish/agxai/blob/master/examples/failure_modes.py)
-produces the output in [Configure failure modes](../how-to/failure-modes.md).
+produces the output in [Configure failure modes](../guide/how-to/failure-modes.md).
 
 ## Run with a chat model
 

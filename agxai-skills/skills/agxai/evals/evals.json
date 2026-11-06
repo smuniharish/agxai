@@ -1,0 +1,57 @@
+{
+  "skill_name": "agxai",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "I have a LangGraph fraud-review graph in app.py: a `score` node calls a risk model and a `route` node picks AUTO_APPROVE or HUMAN_REVIEW. Add agxai so every run records why it routed, and give me a function that returns an auditor explanation of the last decision.",
+      "expected_output": "app.py instruments the compiled graph with one XAIRuntime, records the risk score as evidence in `score`, records the routing decision with candidate actions, the evidence ID, and a factor in `route`, and adds a function that collects the run and calls explain_decision with Audience.AUDITOR.",
+      "files": ["files/fraud_graph/app.py"],
+      "assertions": [
+        "The graph that callers invoke is the object returned by runtime.instrument(...)",
+        "record_evidence is called in the score node with the model's score in the summary or a factor",
+        "record_decision is called in the route node with candidate_actions containing both AUTO_APPROVE and HUMAN_REVIEW",
+        "The decision passes evidence_ids referencing the recorded evidence",
+        "The explanation function uses collect_runs (or an explicit run=) and explain_decision with Audience.AUDITOR",
+        "Graph inputs, outputs, and routing logic are unchanged"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Customers of our loan app must see why they were declined, but never the internal credit score or the bureau evidence. Analysts must see everything. We already record decisions with agxai. Implement this and prove it with tests.",
+      "expected_output": "A PolicyProvider whose evaluate returns denied_fields {contributing_factors, supporting_evidence} for Audience.END_USER and nothing for other audiences, registered on the runtime, plus pytest tests that check every audience and search the serialized end-user explanation for the score.",
+      "files": [],
+      "assertions": [
+        "A class implementing PolicyProvider.evaluate is added and registered with runtime.register(PolicyProvider, ...)",
+        "For Audience.END_USER the policy denies contributing_factors and supporting_evidence",
+        "Internal audiences (developer, auditor, or business) are not restricted",
+        "A test asserts the score value does not appear in the end-user explanation's serialized JSON",
+        "A test asserts the disclosure notes announce the withheld sections",
+        "No redaction, capture setting, or policy is weakened to make a test pass"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "After upgrading, a tool in our LangGraph agent calls `await runtime.record_evidence(...)` from a thread pool and now fails with `RuntimeError: no active run`. Graph runs still complete. What is wrong and how do I fix it without changing what the graph does?",
+      "expected_output": "Explains that the thread has no active run because context variables are not copied into threads it started, and fixes it by passing run= captured inside the graph (or using contextvars.copy_context().run), without altering the graph's behaviour.",
+      "files": [],
+      "assertions": [
+        "Identifies that the record call runs outside the instrumented call's context (thread does not inherit current_run)",
+        "Proposes passing run= from runtime.current_run captured in the node, or copying the context into the thread",
+        "Mentions checking runtime.errors or the FAIL_OPEN default to explain why the graph still completes",
+        "Does not suggest changing graph inputs, outputs, or control flow"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "Ship our agxai events to Langfuse in production and make sure nothing is lost when the worker shuts down. We use LangGraph.",
+      "expected_output": "Installs agxai[langfuse], registers LangfuseObservability as the ObservabilityProvider, relies on the Langfuse SDK's own environment variables for credentials, and awaits runtime.close() (or flush) at shutdown.",
+      "files": [],
+      "assertions": [
+        "Uses the agxai[langfuse] extra",
+        "Registers LangfuseObservability via runtime.register(ObservabilityProvider, ...)",
+        "Credentials come from the Langfuse SDK's environment variables, not hard-coded values",
+        "Calls await runtime.close() or await runtime.flush() at shutdown"
+      ]
+    }
+  ]
+}
