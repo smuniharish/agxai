@@ -113,7 +113,10 @@ def test_closing_batch_as_completed_early_cancels_the_pending_futures() -> None:
     pairs.close()
 
     assert first == (0, {"count": 2})
-    assert len(runtime.run_sync(executions(runtime))) == 3
+    # A future the pool had not started is cancelled and never recorded.
+    records = runtime.run_sync(executions(runtime))
+    assert 2 <= len(records) <= 3
+    assert set(statuses(records)) == {ExecutionStatus.COMPLETED}
 
 
 async def test_abatch_as_completed_records_one_run_per_input() -> None:
