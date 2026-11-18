@@ -31,7 +31,7 @@ decision = await runtime.record_decision(
 | `provenance_ids` | IDs of related [provenance links](provenance.md). |
 | `policy_references` | Identifiers of business rules or policies that were applied. |
 | `confidence`, `uncertainty` | Optional values from 0 to 1. |
-| `metadata` | Any additional JSON-safe fields. Credentials are redacted. |
+| `metadata` | Any additional JSON-safe fields. Credential-named keys are redacted by `record_decision`. |
 
 ## Recorded decision
 

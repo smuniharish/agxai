@@ -16,7 +16,7 @@ compatibility: >-
   Python 3.12 or newer with agxai 1.x installed (pip install agxai). No agent
   framework is required by the templates; the scripts run offline.
 metadata:
-  version: "1.0.2"
+  version: "1.0.3"
   documentation: "https://agxai.readthedocs.io/en/latest/integrations/custom-frameworks/"
 ---
 

@@ -7,7 +7,7 @@ to an auditor. It takes about five minutes and needs no external services.
 ## Requirements
 
 - Python 3.12 or newer
-- LangGraph 1.x, 1.2.20 or newer, and LangChain Core 1.x, 1.7.6 or newer,
+- LangGraph 1.x, 1.2.22 or newer, and LangChain Core 1.x, 1.8.2 or newer,
   installed automatically by the `langgraph` extra
 
 ## Install
@@ -159,8 +159,8 @@ def score_risk(state: Review) -> Review:
     return {"risk_score": risk_score}
 ```
 
-`run_sync` reuses one event loop per thread and carries the caller's context,
-so the evidence lands in the run of the graph call that executes the node.
+`run_sync` carries the caller's context, so the evidence lands in the run of
+the graph call that executes the node.
 
 ## Next steps
 

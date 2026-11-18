@@ -1,8 +1,10 @@
 # Disclosure policy
 
 `agxai` controls information at two boundaries: what is **recorded**,
-and what is **disclosed** in an explanation. This page describes both
-pipelines, and what they do and do not protect.
+and what is **disclosed** in an explanation. This page describes those runtime
+controls and their limitations. The separate
+[architecture publication guidance](../development/contributing.md#architecture-disclosure)
+applies to public documentation.
 
 ## Recording boundary
 
@@ -12,8 +14,7 @@ pipelines, and what they do and do not protect.
    resume answers, decision factor values, and source and document metadata)
    are converted to JSON-safe data, and credential-named keys are replaced
    with `"[not captured]"`. A factor whose name is a credential name keeps no
-   value at all. This happens before the canonical record exists, so no
-   provider ever sees a credential value. See
+   value at all. See
    [Redaction](../guide/concepts/policies.md#redaction).
 2. **Capture mode.** `XAIConfig.capture_state` limits which state keys are
    recorded at all: changed keys only, every key, named keys, a custom
@@ -42,9 +43,9 @@ pipelines, and what they do and do not protect.
 
 ## What the controls guarantee
 
-- Values under credential-named keys are never stored or exported when they
-  are recorded through instrumentation or the `record_*` methods. A record you
-  build yourself and pass to `record_artifact` is delivered as you built it.
+- Credential-named keys in the supported captured values listed above are
+  redacted before those values are recorded. A record you build yourself and
+  pass to `record_artifact` is delivered as you built it.
 - A dropped event leaves no trace in the store, the observability backend, or
   the run's `Execution`.
 - An explanation is never returned without its exposure policy having been

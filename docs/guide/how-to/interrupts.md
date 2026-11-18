@@ -32,8 +32,8 @@ The two calls are two runs on the same thread:
 
 A resume that answers several interrupts by ID, such as
 `Command(resume={interrupt_id: answer})`, is recorded as that mapping.
-Payloads and answers are [redacted](../concepts/policies.md#redaction) like
-any other value, so a credential in an answer is never stored.
+Payloads and answers receive [key-based redaction](../concepts/policies.md#redaction).
+Secrets in free text or under unrecognized keys are not detected.
 
 Interrupts are recorded however the graph is called: every entry point,
 `version="v1"` or `"v2"` output, any stream mode, and interrupts raised inside

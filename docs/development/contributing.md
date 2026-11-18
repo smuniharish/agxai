@@ -39,3 +39,15 @@ suites.
   changes are additive only; see
   [Canonical model](../architecture/canonical-model.md#compatibility).
 - Update the documentation and the changelog with every user-visible change.
+
+## Architecture disclosure
+
+Document public capabilities, interfaces, integration and extension contracts,
+and security limitations. Prefer accurate conceptual diagrams over unnecessary
+internal blueprints, and flag potentially valuable or security-sensitive
+details for maintainer and legal review before publication. Public source and
+history remain accessible even when documentation is simplified.
+
+See the
+[full publication guidance](https://github.com/smuniharish/agxai/blob/master/CONTRIBUTING.md)
+for contributors.

@@ -18,7 +18,7 @@ compatibility: >-
   support needs agxai[langgraph]. scripts/verify_setup.py runs offline in the
   project's Python environment.
 metadata:
-  version: "1.0.2"
+  version: "1.0.3"
   documentation: "https://agxai.readthedocs.io"
 ---
 
@@ -100,8 +100,8 @@ Copy this checklist and keep it current:
 | Per-audience explanations, LLM-phrased explanations | [references/disclosure.md](references/disclosure.md) |
 | Plugins, LangSmith, Langfuse, OpenTelemetry | [references/exporting.md](references/exporting.md) |
 | `FAIL_OPEN` / `FAIL_CLOSED` / `STRICT`, runs outside any graph | [references/failure-modes.md](references/failure-modes.md) |
-| Exact signatures, settings, records, enumerations | [references/api.md](references/api.md) |
-| An error, a missing run, or an unexpected explanation | [references/troubleshooting.md](references/troubleshooting.md) |
+| Exact signatures, settings, records, enumerations | [references/API.md](references/API.md) |
+| An error, a missing run, or an unexpected explanation | [references/TROUBLESHOOTING.md](references/TROUBLESHOOTING.md) |
 
 ## Rules
 

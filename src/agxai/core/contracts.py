@@ -130,8 +130,7 @@ class ProvenanceStore(ABC):
     ) -> Sequence[ProvenanceLink]:
         """Return every upstream link of ``entity_id``, breadth-first and nearest first.
 
-        Walks `parents` one level at a time and expands each entity once, so
-        every link is returned exactly once and cycles terminate. Override it
+        Every link is returned exactly once and cycles terminate. Override it
         only to use a faster native query, such as a recursive SQL query.
 
         Raises:

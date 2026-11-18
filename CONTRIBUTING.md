@@ -38,6 +38,34 @@ Never commit credentials, local environments, or generated reports.
 
 ## Documentation and diagrams
 
+### Architecture disclosure
+
+Public documentation should explain the package's purpose, component
+responsibilities, supported integrations, public interfaces, configuration,
+extension points, and user-facing behavior. Keep examples, compatibility
+limits, error handling, security guarantees, and their limitations explicit.
+
+Prefer conceptual diagrams and concise explanations over unnecessary internal
+execution sequences, routing rules, scheduling details, or optimization
+blueprints. Check diagrams against the actual code and review their Mermaid
+source, rendered images, surrounding text, examples, and generated API
+docstrings together. Do not remove information developers need to use,
+extend, or troubleshoot the package.
+
+Flag potentially valuable algorithms, unpublished designs, and
+security-sensitive details for maintainer and, where appropriate, legal review
+before publication. Do not place confidential material elsewhere in the
+public repository. Report suspected secrets or vulnerabilities privately as
+described in [SECURITY.md](SECURITY.md).
+
+Public source code and Git history may already reveal details omitted from
+documentation; editing documentation does not make them secret. Copyright,
+trade secrets, and patents are distinct matters for appropriate review. This
+guidance does not change the Apache-2.0 license or restrict independent
+implementations.
+
+### Building documentation
+
 ```bash
 uv run zensical build --strict
 uv run python scripts/check_site_links.py
@@ -69,22 +97,33 @@ updated `docs/assets/diagrams/manifest.json`.
 
 ## Releases
 
-Releases follow [semantic versioning](https://semver.org/). To publish one:
+Releases follow [semantic versioning](https://semver.org/). Publishing is a
+manual maintainer action; GitHub Actions never uploads distributions to PyPI.
 
 1. Set the version in `pyproject.toml` and `metadata.version` in both Agent
    Skills, `agxai-skills/skills/agxai/SKILL.md` and
-   `agxai-skills/skills/agxai-extend/SKILL.md`, then run `uv lock`. A test
-   fails until the versions match.
+   `agxai-skills/skills/agxai-extend/SKILL.md`, then run `uv lock`.
 2. Move the changelog entries under a heading with the version and date.
-3. Merge to `master`, then publish a GitHub release whose tag is the version
-   with a `v` prefix, such as `v1.0.0`.
+3. Build and inspect distributions locally:
 
-The [release workflow](.github/workflows/release.yml) checks that the tag
-matches the version, builds and checks the distributions, and publishes them
-to PyPI with trusted publishing, so no API token is stored in the repository.
-Before the first release, a maintainer adds the workflow as a trusted
-publisher in the PyPI project settings (repository
-`smuniharish/agxai`, workflow `release.yml`, environment `pypi`).
+   ```bash
+   uv build --no-sources
+   uvx twine check --strict dist/*
+   ```
+
+   Inspect the wheel and source archive contents and metadata before publishing.
+4. Merge to `master`.
+5. Publish manually from the maintainer's machine using a short-lived or
+   otherwise appropriately protected PyPI token. For example, set
+   `UV_PUBLISH_TOKEN` in the local environment and run `uv publish dist/*`.
+   Never commit the token or configure it as a GitHub Actions secret.
+6. Create the GitHub release manually with a `v`-prefixed tag such as
+   `v1.0.0`; attach the inspected distributions if desired.
+
+The [release workflow](.github/workflows/release.yml) only checks the tag,
+builds the distributions, and uploads them as a GitHub Actions artifact. It
+has no PyPI publishing job, publishing credentials, or Trusted Publishing
+permissions.
 
 ## Security reports
 

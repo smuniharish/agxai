@@ -80,13 +80,8 @@ has 1.0. The default engine gives each family half of the total:
 [canonical model gallery](https://github.com/smuniharish/agxai/blob/master/examples/canonical_model_gallery.py);
 `schema_version`, `id`, `timestamp`, `context`, and empty `metadata` omitted.)
 
-Reading it:
-
-- Factors share 0.5: `fraud_risk_score` = 0.5 × 0.8 = 0.40 and
-  `review_threshold` = 0.5 × 0.2 = 0.10.
-- Evidence shares 0.5 in proportion to strength: 0.5 × 1.0 / 1.873 = 0.267 for
-  the policy, and 0.5 × 0.873 / 1.873 = 0.233 for the fraud score.
-- `confidence` is the mean evidence strength: (1.0 + 0.873) / 2 = 0.9365.
+The factors and evidence each receive half of the total; `confidence` is the
+mean evidence strength.
 
 ## Custom rules and weights
 

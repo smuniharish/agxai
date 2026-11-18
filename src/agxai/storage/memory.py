@@ -107,12 +107,9 @@ class _Record:
 class InMemoryProvenanceStore(ProvenanceStore):
     """The default store: thread-safe and indexed, for development, tests, and ephemeral runs.
 
-    Records are serialized on write and rebuilt on read, so mutating a live
-    `Execution` (or a returned record) never changes stored data, and writes
-    stay cheap because validation happens only for records that are read. One
-    lock protects the indexes, which makes the store safe to share across
-    threads and event loops. Records are kept until `delete_run` removes them or
-    the process exits.
+    Mutating a live `Execution` or a returned record never changes stored data.
+    The store can be shared across threads and event loops. Records are kept
+    until `delete_run` removes them or the process exits.
     """
 
     def __init__(self) -> None:

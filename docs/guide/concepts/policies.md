@@ -4,7 +4,7 @@ Three controls decide what is recorded and who may see it:
 
 | Control | Applies to | Default |
 | --- | --- | --- |
-| [Redaction](#redaction) | Every free-form value before a record is created | Always on |
+| [Redaction](#redaction) | Captured state, metadata, and other supported values | Key-based |
 | [Capture policy](#capture-policy) | Each event, before it is recorded, stored, or emitted | Records everything |
 | [Exposure policy](#exposure-policy) | Each explanation, per audience | Shows decision facts; notes that raw content and private memory are never included |
 
@@ -20,7 +20,7 @@ Free-form values (state values, `metadata`, interrupt payloads, resume answers,
 decision factor values, source and document metadata, and context metadata)
 pass through `sanitize_value` before a record is created. It does two things.
 
-**It withholds credentials.** A mapping key is treated as a credential when any
+**It redacts credential-named keys.** A mapping key is treated as a credential when any
 dot-separated part of it, after normalization (camelCase, `-`, and spaces become
 `_`; case is ignored), equals a credential name or ends with `_<name>`. The
 names are `password`, `passwd`, `passphrase`, `secret`, `token`, `api_key`,
@@ -29,9 +29,9 @@ names are `password`, `passwd`, `passphrase`, `secret`, `token`, `api_key`,
 `refresh_token`, `auth_token`, `session_token`, `secret_key`, `jwt`, `dsn`, and
 `connection_string`.
 
-- Credentials: `Authorization`, `x-api-key`, `OPENAI_API_KEY`, `accessToken`,
+- Credential-named keys: `Authorization`, `x-api-key`, `OPENAI_API_KEY`, `accessToken`,
   `basic_auth`, `headers.authorization`, `db_password`
-- Not credentials: `token_usage`, `max_tokens`, `author`, `oauth_provider`,
+- Not matched as credential names: `token_usage`, `max_tokens`, `author`, `oauth_provider`,
   `secretary`, `keyword`
 
 The value of a credential key is replaced with `"[not captured]"`.
@@ -63,9 +63,11 @@ become mappings, redacted the same way. Non-finite floats become `"nan"` or
 `"[max depth exceeded]"`.
 
 Redaction catches *obvious* credentials by name. It cannot recognize a secret
-stored under an innocent key, or personal data such as an email address. Use
-the [capture mode](../../getting-started/configuration.md#state-capture) and a
-capture policy to keep such data out of the records.
+stored under an innocent key, a secret in free text, or personal data such as
+an email address. A prebuilt record passed to `record_artifact` is delivered as
+provided and is not re-redacted. Use the
+[capture mode](../../getting-started/configuration.md#state-capture) and a
+capture policy to keep unwanted data out of the records.
 
 ## Capture policy
 

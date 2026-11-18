@@ -17,8 +17,8 @@ framework and provider integration is an optional extra.
     uv add "agxai[langgraph]"
     ```
 
-The `langgraph` extra installs LangGraph 1.x (1.2.20 or newer) and LangChain
-Core 1.x (1.7.6 or newer).
+The `langgraph` extra installs LangGraph 1.x (1.2.22 or newer) and LangChain
+Core 1.x (1.8.2 or newer).
 
 ## Core only
 

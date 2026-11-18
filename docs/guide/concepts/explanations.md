@@ -24,17 +24,15 @@ explanation = await runtime.explain_decision(decision, audience=Audience.AUDITOR
 
 ![How explain_decision builds an explanation](../../assets/diagrams/explanation-flow.png)
 
-1. `explain_decision` gathers the decision's run and the evidence it references
-   into an `ExplanationContext`. Use `explain(context)` to build the context
-   yourself.
-2. If the registered engine needs an LLM, the runtime checks that
-   `XAIConfig.llm_explanation_enabled` is set *before* any other work.
-3. The registered `PolicyProvider` evaluates exposure (`PolicyAction.EXPOSE`)
-   for the audience.
-4. The `AttributionEngine` scores the decision, unless the context already
-   carries an attribution.
-5. The `ExplanationEngine` renders the explanation and empties every section
-   the policy withholds.
+`explain_decision` uses the recorded run and referenced evidence. Use
+`explain(context)` to supply an `ExplanationContext` yourself. The registered
+`PolicyProvider` controls exposure (`PolicyAction.EXPOSE`) for the audience;
+the attribution and explanation providers determine the contributions and
+presentation. An attribution already in the context is reused, and an
+LLM-backed engine requires `XAIConfig.llm_explanation_enabled`.
+
+Withheld sections are emptied and announced in `disclosure`. Withheld content
+is not sent to an LLM.
 
 If the policy, the attribution, or the engine fails, `XAIInstrumentationError`
 is raised in **every** failure mode. A partial or unfiltered explanation is

@@ -53,9 +53,8 @@ class LangSmithObservability(ObservabilityAdapter):
     a completed child run whose ID is the event's ``id`` and whose name is the
     event type, with the canonical payload as ``inputs`` and the
     `correlation_fields` as metadata. The root run is ended when the run
-    completes, fails, or is interrupted. Runs are created through LangSmith's
-    ``RunTree``, so the client batches them in the background rather than
-    blocking the graph.
+    completes, fails, or is interrupted. The client batches exports in the
+    background.
 
     Without an injected client the adapter creates ``langsmith.Client()`` and
     owns it: `close` then closes it. `flush` always flushes the client. At most

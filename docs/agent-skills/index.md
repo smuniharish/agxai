@@ -86,6 +86,29 @@ Each skill tells the agent when to use the other one, so you can install both
 and the agent picks the right one. If your application only uses agxai,
 `agxai` alone is enough.
 
+## Skills for supported integrations
+
+Some optional integrations have separate, upstream-maintained Agent Skills.
+They are not part of agxai and do not install or change Python dependencies.
+Install only the skills relevant to your stack:
+
+| Upstream | Skill | Use | Install |
+| --- | --- | --- | --- |
+| [Pydantic](https://github.com/pydantic/pydantic) | `pydantic` | Model and validate data with Pydantic. | `npx skills add https://github.com/pydantic/pydantic --skill pydantic` |
+| [LangChain skills](https://github.com/langchain-ai/langchain-skills) | `langchain-build-agent` | Build or modify Deep Agents, LangGraph, or LangChain apps. | `npx skills add langchain-ai/langchain-skills --skill langchain-build-agent --yes` |
+| [LangChain skills](https://github.com/langchain-ai/langchain-skills) | `langchain-agent-tracing` | Instrument and troubleshoot LangSmith tracing. | `npx skills add langchain-ai/langchain-skills --skill langchain-agent-tracing --yes` |
+| [LangChain skills](https://github.com/langchain-ai/langchain-skills) | `langchain-agent-monitoring` | Set up production monitoring and online evaluation with LangSmith. | `npx skills add langchain-ai/langchain-skills --skill langchain-agent-monitoring --yes` |
+| [LangChain skills](https://github.com/langchain-ai/langchain-skills) | `langchain-eval-engineering` | Design agent evaluations and benchmarks. | `npx skills add langchain-ai/langchain-skills --skill langchain-eval-engineering --yes` |
+| [Langfuse skills](https://github.com/langfuse/skills) | `langfuse` | Work with Langfuse tracing, prompts, datasets, and evaluation. | `npx skills add langfuse/skills --skill langfuse` |
+| [Langfuse skills](https://github.com/langfuse/skills) | `migrate-to-langfuse` | Migrate from another observability or evaluation platform. | `npx skills add langfuse/skills --skill migrate-to-langfuse` |
+
+The LangChain skills repository notes that it is in early development. For
+Langfuse API-backed actions, use an authorized project account and credentials;
+never paste or commit credential values. Review each source and its current
+prerequisites before installing; skill content can change independently of
+agxai. We did not find verified, user-facing integration skills for the other
+optional dependencies during this review.
+
 ## Use them
 
 Once installed, describe the task. The agent loads a skill when the task

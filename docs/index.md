@@ -68,8 +68,9 @@ basis of each decision as data and builds every explanation from those records.
 
     ---
 
-    Credentials are redacted before storage, LLM phrasing needs two opt-ins,
-    and instrumentation failures never break your graph unless you ask them to.
+    Captured state and metadata use [key-based redaction](guide/concepts/policies.md#redaction),
+    LLM phrasing needs two opt-ins, and instrumentation failures never break
+    your graph unless you ask them to.
 
 </div>
 

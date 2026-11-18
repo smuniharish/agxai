@@ -3,7 +3,7 @@ flowchart LR
     classDef artifact fill:#eef4ff,stroke:#3567c7,color:#0f2547
     classDef decision fill:#ecf8f1,stroke:#2f8f5b,color:#0f2547
 
-    subgraph Walk["store.lineage(decision.id) follows these links, nearest first"]
+    subgraph Walk["Upstream lineage walk, opposite the stored source-to-target direction"]
         direction LR
         decision["Decision<br/>HUMAN_REVIEW"]:::decision
         score["Evidence<br/>fraud score 0.91"]:::artifact

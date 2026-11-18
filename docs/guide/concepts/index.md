@@ -12,9 +12,11 @@ answers one question:
 | [Attribution](attribution.md) | How much did each factor and piece of evidence contribute? | An `AttributionEngine`, on demand |
 | [Explanation](explanations.md) | How should the outcome be described to this audience? | An `ExplanationEngine`, on demand |
 
-[Policies](policies.md) apply at every step: credentials are redacted before
-anything is recorded, a capture policy can drop events, and an exposure policy
-decides which parts of an explanation each audience sees.
+[Policies](policies.md) control captured data and explanations: credential-named
+keys in captured state and metadata are redacted, a capture policy can drop
+events, and an exposure policy decides which explanation sections an audience
+sees. Redaction has [limits](policies.md#redaction), including for prebuilt
+records passed to `record_artifact`.
 
 ![How the canonical records reference each other](../../assets/diagrams/artifact-lineage.png)
 
@@ -41,9 +43,9 @@ Every record is a Pydantic model with the same guarantees:
 - **Identified and scoped.** Records carry a UUID `id` and an
   `ExecutionContext` with the application, tenant, graph, and run IDs. Stores
   use these IDs to keep tenants and runs apart.
-- **JSON-safe.** Free-form fields (`metadata`, state values, interrupt
-  payloads) are converted to JSON-compatible data, with credentials redacted,
-  before the record is created.
+- **JSON-safe.** Supported captured values (`metadata`, state values,
+  interrupt payloads) are converted to JSON-compatible data, with
+  credential-named keys redacted, before the record is created.
 
 Records are referenced by ID rather than copied. A decision lists the IDs of
 its evidence, and evidence points to its full content through a

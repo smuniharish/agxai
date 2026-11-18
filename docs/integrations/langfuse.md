@@ -47,12 +47,8 @@ it down if the adapter created it. A client you pass in is never shut down.
 
 ## Overhead
 
-Each event is one `create_event` call on the event loop. The Langfuse client
-only enqueues the span and exports it from its own background thread, so the
-call is short: with Langfuse 5.2 on a development laptop it held the loop for
-about 0.12 ms at the median and 0.4 ms at p95. A round trip through
-`asyncio.to_thread` measured 0.13 ms at the median on the same machine, so
-moving the call to a worker thread would not make an event cheaper, and the
-adapter calls it inline. Measure
-your own environment with `scripts/benchmark_overhead.py`; see
+The Langfuse client batches exports, avoiding a network round trip for each
+event. With Langfuse 5.2 on a development laptop, an event held the loop for
+about 0.12 ms at the median and 0.4 ms at p95. Measure your own environment
+with `scripts/benchmark_overhead.py`; see
 [Testing](../development/testing.md#measuring-overhead).

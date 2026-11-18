@@ -96,19 +96,12 @@ skills, so you can leave them out.
     python <skills directory>/agxai/scripts/verify_setup.py
     ```
 
+    Example output, with versions and optional checks varying by environment:
+
     ```text
-    PASS  Python 3.15.2 (3.12 or newer required)
-    PASS  agxai 1.0.2 (1.x expected by this skill)
-    PASS  pydantic 2.14.3 (>=2.14.3,<3 required)
-    PASS  langgraph 1.2.20 (>=1.2.20,<2 required)
-    PASS  langchain-core 1.7.6 (>=1.7.6,<2 required)
-    INFO  optional integrations: langsmith 0.14.17, langfuse 5.2.0, opentelemetry-sdk 1.45.2, langchain-openai 1.7.4
-    PASS  framework-neutral recording and explanation work
-    PASS  instrumented graph recorded nodes ['score', 'route'], 2 state changes, 1 evidence, 1 decision
-    PASS  auditor explanation: The routing decision selected 'REVIEW'.
-    PASS  end-user explanation withholds the score and announces it
-    PASS  no instrumentation errors (0 recorded)
-    PASS  interrupt and resume recorded and linked through the checkpoint
+    PASS  Python <installed version> (3.12 or newer required)
+    PASS  agxai <installed version> (1.x expected by this skill)
+    ...
     All checks passed.
     ```
 

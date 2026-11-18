@@ -699,12 +699,12 @@ class XAIRuntime:
     ) -> StateTransition | None:
         """Record a node's state change, filtered by ``config.capture_state``.
 
-        Keys are compared in state order. Values are sanitized with
-        `sanitize_value`, and credential-named keys are never recorded with
-        their values. Instrumented graphs call this automatically, passing the
-        node's input state as ``before`` and that state updated with the node's
-        output as ``after``; for reducer channels such as ``messages``, ``after``
-        is the value the node wrote, not the reduced channel value.
+        Values are sanitized with `sanitize_value`, and credential-named keys
+        are never recorded with their values. Instrumented graphs call this
+        automatically, passing the node's input state as ``before`` and that
+        state updated with the node's output as ``after``; for reducer channels
+        such as ``messages``, ``after`` is the value the node wrote, not the
+        reduced channel value.
 
         Args:
             node_id: The node whose state changed.
@@ -1119,11 +1119,9 @@ class XAIRuntime:
     async def explain(self, context: ExplanationContext) -> Explanation:
         """Assemble a policy-filtered explanation of ``context`` for ``context.audience``.
 
-        The runtime (1) refuses an LLM-backed engine unless
-        ``config.llm_explanation_enabled`` is set, (2) evaluates the registered
-        `PolicyProvider` for ``PolicyAction.EXPOSE``, (3) runs `attribute` if
-        ``context.attribution`` is ``None``, and (4) renders the result with the
-        registered `ExplanationEngine`. See
+        The registered policy, attribution, and explanation providers determine
+        the result. Existing ``context.attribution`` is reused; an LLM-backed
+        engine requires ``config.llm_explanation_enabled``. See
         [Concepts: Explanations](../guide/concepts/explanations.md).
 
         Raises:
@@ -1226,11 +1224,10 @@ class XAIRuntime:
     def run_sync[Result](self, coroutine: Coroutine[Any, Any, Result]) -> Result:
         """Run ``coroutine`` to completion from synchronous code.
 
-        Reuses one event loop per thread and runs the coroutine in a copy of the
-        caller's context, so context variables (for example an active
-        OpenTelemetry span) propagate. When the calling thread is already
-        running an event loop, the coroutine runs on a background loop that is
-        kept for that thread and reused by later calls.
+        The caller's context variables (for example an active OpenTelemetry
+        span) propagate. This also works when the calling thread already runs
+        an event loop. Event-loop-bound clients must be used on their owning
+        loop.
         """
         context = contextvars.copy_context()
         try:

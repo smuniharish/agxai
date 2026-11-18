@@ -34,8 +34,8 @@ REQUIRED = {
     "pydantic": ((2, 14, 3), (3,)),
 }
 LANGGRAPH = {
-    "langgraph": ((1, 2, 20), (2,)),
-    "langchain-core": ((1, 7, 6), (2,)),
+    "langgraph": ((1, 2, 22), (2,)),
+    "langchain-core": ((1, 8, 2), (2,)),
 }
 OPTIONAL = ("langsmith", "langfuse", "opentelemetry-sdk", "langchain-openai")
 SCORE = 0.9173

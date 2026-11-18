@@ -28,7 +28,7 @@ run. Elsewhere, pass `run=` explicitly.
 | `source` | A `SourceReference` (`source_id`, `source_type`, optional `uri`) naming the system it came from. |
 | `confidence` | How certain the information is, from 0 to 1, if the source provides it. |
 | `quality` | How reliable the source is, from 0 to 1. |
-| `metadata` | Any additional JSON-safe fields. Credentials are redacted. |
+| `metadata` | Any additional JSON-safe fields. Credential-named keys are redacted by `record_evidence`. |
 
 ## Recorded evidence
 

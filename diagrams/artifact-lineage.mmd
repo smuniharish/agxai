@@ -40,22 +40,33 @@ classDiagram
     }
     class AttributionResult {
         method
-        contributions[]
+        contributions: AttributionContribution[]
         normalized
         confidence
+    }
+    class AttributionContribution {
+        factor_id
+        factor_type
+        score
+        evidence_ids
+    }
+    class EvidenceReference {
+        evidence_id
+        relationship
     }
     class Explanation {
         audience
         summary
         reasons
-        contributing_factors
-        supporting_evidence
+        contributing_factors: AttributionContribution[]
+        supporting_evidence: EvidenceReference[]
         disclosure
     }
     Execution *-- ExecutionContext : context
     Decision --> Evidence : evidence_ids
-    ProvenanceLink --> Evidence : lineage
-    AttributionResult --> Decision : subject_id
-    Explanation --> Decision : explains
-    Explanation --> AttributionResult : contributing_factors
-    Explanation --> Evidence : supporting_evidence
+    ProvenanceLink ..> Evidence : source_id or target_id
+    ProvenanceLink ..> Decision : source_id or target_id
+    AttributionResult *-- AttributionContribution : contributions
+    Explanation *-- AttributionContribution : contributing_factors
+    Explanation *-- EvidenceReference : supporting_evidence
+    EvidenceReference --> Evidence : evidence_id

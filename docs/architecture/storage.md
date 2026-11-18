@@ -45,16 +45,11 @@ with the same semantics.
 
 ## The default in-memory store
 
-`InMemoryProvenanceStore` needs no setup. It is built for correctness under
-concurrency, not just for demos:
+`InMemoryProvenanceStore` needs no setup:
 
-- **Thread-safe.** One lock guards all indexes, so synchronous and
-  asynchronous calls can share it.
-- **Indexed.** Records are indexed by ID, by application and tenant, by run,
-  and provenance links by source and target, so `get`, scoped queries,
-  `delete_run`, and lineage walks never scan every record.
-- **Copy-safe.** Records are stored as their JSON data and validated again on
-  read. Mutating a returned record never changes the stored one.
+- **Thread-safe.** Synchronous and asynchronous calls can share it.
+- **Copy-safe.** Mutating a live or returned record never changes the stored
+  one.
 - **Deterministic.** Query results are sorted by timestamp, event sequence,
   and ID.
 
@@ -71,8 +66,8 @@ runtime.register(ProvenanceStore, MyDatabaseStore(...))
 ```
 
 The [PostgreSQL store example](../examples/postgres-store.md) is a complete,
-tested implementation to start from. It uses one JSONB table with indexes for
-tenant and run isolation and idempotent upserts, and inherits `lineage`.
+tested implementation to start from. It provides tenant and run isolation and
+idempotent upserts, and inherits `lineage`.
 Records other than executions, events, and provenance links, such as evidence
 and decisions, are delivered to [plugins](plugins.md), so a database-backed
 deployment usually adds a plugin that writes them to the same database.

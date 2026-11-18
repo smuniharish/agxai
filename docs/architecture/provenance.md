@@ -18,15 +18,11 @@ that recorded it.
 
 ## Walking lineage
 
-`lineage(entity_id, context=..., max_depth=100)` walks upstream breadth-first:
-
-1. Find the links whose target is the entity (`parents`).
-2. Add their sources to the next frontier, skipping entities already visited.
-3. Repeat until no new sources remain or `max_depth` levels have been walked.
-
-The result is every upstream link, nearest first. Each entity is expanded once
-and each link has a single target, so every link appears exactly once and
-cycles terminate. The cost is one `parents` query per visited entity.
+`lineage(entity_id, context=..., max_depth=100)` returns upstream links
+breadth-first, nearest first, up to the requested depth. Each link appears
+once and cycles terminate. The inherited implementation uses the store's
+`parents` method; stores can override it with a native query while preserving
+these semantics.
 
 ## Scoping
 

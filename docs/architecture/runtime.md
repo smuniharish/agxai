@@ -9,9 +9,8 @@ handled.
 
 ## Runs
 
-A `Run` is the in-memory handle on one execution. It holds the live `Execution`,
-the semantic records (`run.evidence`, `run.decisions`), and a counter that
-numbers the run's events.
+A `Run` is the in-memory handle on one execution. It holds the live `Execution`
+and semantic records such as `run.evidence` and `run.decisions`.
 
 - **`start_run(config, continuation_of=...)`** builds the `ExecutionContext`
   from a config mapping (`metadata` / `configurable`, compatible with LangChain),
@@ -41,25 +40,11 @@ See [Custom frameworks](../integrations/custom-frameworks.md).
 
 ## LangGraph instrumented calls
 
-`InstrumentedGraph` drives this lifecycle for every top-level call, as the
-diagram shows:
-
-1. For a graph with a checkpointer, a `thread_id`, and `capture_checkpoints`
-   on, a call whose input is `None` or a `Command` continues the thread. The
-   proxy reads the checkpoint it starts from, and the run that wrote it, from
-   the checkpoint's metadata.
-2. It starts the run, linked to that earlier run, and records the restored
-   checkpoint and, for a resume, the answer.
-3. It calls the wrapped graph with a callback handler for this run and the run
-   ID in the config metadata, under `RUN_ID_METADATA_KEY`.
-4. When the graph returns, raises, or pauses, it reads the thread's state again,
-   unless the call was cancelled, to record the last checkpoint the run wrote
-   and any pending interrupts or breakpoint nodes. Then it finishes the run.
-
-Interrupts are collected from the `GraphInterrupt` LangGraph raises inside the
-graph, and from the state read, and deduplicated by interrupt ID. This does not
-depend on the output format, so every entry point, output version, and stream
-mode is recorded the same way.
+`InstrumentedGraph` records a run for each supported top-level call and, when
+checkpoint capture is enabled, links continued runs to their checkpoints.
+Interrupts and resumes are recorded across the supported entry points and
+stream modes. See the [LangGraph integration](../integrations/langgraph.md)
+for supported calls, checkpoint requirements, and limitations.
 
 ## Context propagation
 
@@ -85,32 +70,23 @@ The runtime is asynchronous. `runtime.run_sync(coroutine)` runs a coroutine from
 synchronous code. It is used by the instrumentation of `invoke`, `stream`, and
 `batch`, and by synchronous nodes that record evidence.
 
-- Each thread reuses one event loop, so recording from synchronous code does
-  not create a new loop per call.
-- The coroutine runs in a copy of the caller's context, so the current run and
-  any active OpenTelemetry span carry over.
-- When the calling thread already runs an event loop, as in a Jupyter notebook
-  or a synchronous call made from async code, the coroutine runs on a
-  background loop kept for that thread instead of deadlocking the busy loop.
-  Later calls reuse it, and it stops when the thread releases it.
+The caller's context, including the current run and any active OpenTelemetry
+span, carries over. It also works when the calling thread already runs an
+event loop, such as in a notebook. Event-loop-bound clients must still be used
+on their owning loop; see the [PostgreSQL example](../examples/postgres-store.md).
 
 ## Concurrency and timeouts
 
 Every provider call (store write, event emit, capture-policy check, exposure
 policy, attribution, explanation, plugin delivery) is one *operation*.
 
-- At most `max_concurrency` operations run at once, across all threads and
-  event loops of the runtime, including the per-thread loops of synchronous
-  calls. Slots are granted first come, first served, and a waiting operation is
-  woken on its own event loop as soon as a slot frees up.
-- Work that cannot have an effect is skipped: events are not evaluated by the
-  default capture policy, which allows everything, or sent to the default
-  `NoOpObservability`, so neither takes a slot.
+- At most `max_concurrency` operations run at once across the runtime's threads
+  and event loops. Waiting operations are served first come, first served.
 - Each operation has one budget of `operation_timeout_seconds`. Waiting for a
   slot and running the operation both count against it, so a saturated or slow
   backend surfaces as a `TimeoutError` instead of a stalled graph.
-- Event sequence numbers are assigned under a per-run lock, so concurrent
-  nodes, such as parallel branches, still produce a total order.
+- Event sequence numbers give concurrently recorded events a total order
+  within a run.
 
 ## Failure handling
 

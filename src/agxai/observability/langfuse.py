@@ -39,13 +39,12 @@ def langfuse_trace_context(context: ExecutionContext) -> TraceContext:
 class LangfuseObservability(ObservabilityAdapter):
     """Emit each canonical event as a Langfuse event observation.
 
-    Events are created with ``client.create_event(...)``: the event type is the
-    observation name, the canonical JSON payload is its ``input``, and the
-    `correlation_fields` are its ``metadata``. All events of one run share one
-    Langfuse trace (see `langfuse_trace_context`). The client batches and
-    exports observations in the background. Without an injected client the
-    adapter uses ``langfuse.get_client()`` and owns it: `close` then shuts it
-    down. `flush` always flushes the client.
+    The event type is the observation name, the canonical JSON payload is its
+    ``input``, and the `correlation_fields` are its ``metadata``. All events of
+    one run share one Langfuse trace (see `langfuse_trace_context`). The client
+    batches and exports observations in the background. Without an injected
+    client the adapter uses ``langfuse.get_client()`` and owns it: `close` then
+    shuts it down. `flush` always flushes the client.
     """
 
     def __init__(

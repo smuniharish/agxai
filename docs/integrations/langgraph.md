@@ -59,16 +59,14 @@ instead of starting a new one.
 
 ## What is recognized
 
-- **Nodes.** A node is recognized by the same rule LangGraph uses: its run name
-  matches the `langgraph_node` metadata and it is not hidden. Internal
-  runnables inside a node, such as prompt templates, chat models, or parsers,
-  are not mistaken for nodes.
-- **State changes.** These are the node's input state merged with its output.
-  Partial updates, `Command(update=...)`, lists of commands, and Pydantic or
-  dataclass states are supported. For reducer channels such as `messages`,
-  `after` is the value the node wrote, not the reduced channel value.
-- **Subgraphs and nested agents.** Nodes in a subgraph record `parent_node_id`,
-  derived from LangGraph's checkpoint namespace.
+- **Nodes.** Graph nodes are recognized using LangGraph metadata; hidden nodes
+  and internal runnables such as prompt templates and chat models are not
+  recorded as nodes.
+- **State changes.** Partial updates, `Command(update=...)`, lists of
+  commands, and Pydantic or dataclass states are supported. For reducer
+  channels such as `messages`, `after` is the value the node wrote, not the
+  reduced channel value.
+- **Subgraphs and nested agents.** Nodes in a subgraph record `parent_node_id`.
 - **Retries.** Each attempt of a node with a `RetryPolicy` is a separate
   `NodeExecution` with an increasing `attempt`.
 - **Fan-out and the functional API.** Each task started with `Send` is a

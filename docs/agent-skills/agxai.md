@@ -53,8 +53,8 @@ agxai/
 │   ├── disclosure.md               # per-audience and LLM-phrased explanations
 │   ├── exporting.md                # plugins, LangSmith, Langfuse, OpenTelemetry
 │   ├── failure-modes.md            # FAIL_OPEN, FAIL_CLOSED, STRICT, manual runs
-│   ├── api.md                      # imports, signatures, settings, records
-│   └── troubleshooting.md          # symptoms, causes, fixes
+│   ├── API.md                      # imports, signatures, settings, records
+│   └── TROUBLESHOOTING.md          # symptoms, causes, fixes
 ├── scripts/
 │   └── verify_setup.py             # offline environment and behavior check
 ├── assets/

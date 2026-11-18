@@ -3,16 +3,15 @@ flowchart LR
     classDef provider fill:#fff7e8,stroke:#c98a12,color:#0f2547
     classDef outcome fill:#ecf8f1,stroke:#2f8f5b,color:#0f2547
 
-    decision["Recorded Decision<br/>+ referenced Evidence"]:::core
-    context["ExplanationContext<br/>execution · decision · evidence · audience"]:::core
-    gate{"LLM engine and<br/>llm_explanation_enabled?"}:::provider
-    policy["PolicyProvider<br/>evaluate(EXPOSE)"]:::provider
-    attribution["AttributionEngine<br/>signed, normalized contributions"]:::provider
-    engine["ExplanationEngine<br/>structured or LLM-phrased"]:::provider
-    result["Explanation<br/>summary · reasons · factors · evidence · disclosure"]:::outcome
-    refused["XAIInstrumentationError<br/>(no unfiltered output)"]:::outcome
+    records["Recorded decision<br/>and evidence"]:::core
+    request["Explanation request<br/>and audience"]:::core
+    providers["Policy, attribution and<br/>explanation providers"]:::provider
+    optin["Explicit opt-in for<br/>LLM-backed explanations"]:::provider
+    result["Audience-filtered explanation<br/>with disclosure notes"]:::outcome
+    refused["Failure: no explanation returned"]:::outcome
 
-    decision -- "explain_decision" --> context --> gate
-    gate -- "allowed" --> policy --> attribution --> engine --> result
-    gate -- "blocked" --> refused
-    policy -. "evaluation fails" .-> refused
+    records --> request
+    providers -.-> request
+    optin -.-> request
+    request --> result
+    request -. "policy or generation failure" .-> refused

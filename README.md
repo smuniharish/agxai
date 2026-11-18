@@ -68,9 +68,10 @@ ID.
   piece of evidence contributed; every statement traces back to a record.
 - **Per-audience disclosure.** Developers, auditors, business owners and end
   users each get what their policy allows.
-- **Safe by default.** Credentials are redacted before anything is stored,
-  explanations fail closed, LLM phrasing needs two explicit opt-ins, and
-  instrumentation failures never break your graph unless you ask them to.
+- **Safe by default.** Captured state and metadata have credential-named keys
+  redacted, explanations fail closed, LLM phrasing needs two explicit opt-ins,
+  and instrumentation failures never break your graph unless you ask them to.
+  See the [redaction limits](docs/guide/concepts/policies.md#redaction).
 - **Extensible through ABCs.** Subclass `FrameworkInstrumentor` for Agno,
   CrewAI or your own loop, and `ProvenanceStore` for your database. A complete
   PostgreSQL store is included as an example.
