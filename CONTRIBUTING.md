@@ -107,16 +107,21 @@ manual maintainer action; GitHub Actions never uploads distributions to PyPI.
 3. Build and inspect distributions locally:
 
    ```bash
-   uv build --no-sources
-   uvx twine check --strict dist/*
+   version="$(uv version --short)"
+   uv build --no-sources --out-dir "dist/$version"
+   uvx twine check --strict "dist/$version"/*
+   python -m tarfile -l "dist/$version/agxai-$version.tar.gz"
+   python -c 'import sys, zipfile; z = zipfile.ZipFile(sys.argv[1]); print(z.read(next(n for n in z.namelist() if n.endswith(".dist-info/METADATA"))).decode())' "dist/$version/agxai-$version-py3-none-any.whl"
    ```
 
-   Inspect the wheel and source archive contents and metadata before publishing.
+   Inspect the archive contents and wheel metadata before publishing. Use a
+   clean version-specific output directory so older artifacts are not uploaded.
 4. Merge to `master`.
 5. Publish manually from the maintainer's machine using a short-lived or
    otherwise appropriately protected PyPI token. For example, set
-   `UV_PUBLISH_TOKEN` in the local environment and run `uv publish dist/*`.
-   Never commit the token or configure it as a GitHub Actions secret.
+   `UV_PUBLISH_TOKEN` in the local environment and run
+   `uv publish "dist/$version"/*`. Never commit the token or configure it as a
+   GitHub Actions secret.
 6. Create the GitHub release manually with a `v`-prefixed tag such as
    `v1.0.0`; attach the inspected distributions if desired.
 

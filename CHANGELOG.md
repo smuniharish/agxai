@@ -11,8 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   lockfile for version 1.0.3.
 - Simplify public architecture diagrams and document the publication-review
   standard while retaining integration, security, and API contracts.
-- Document official upstream Agent Skills for LangChain ecosystem and
-  Langfuse integrations; keep package publishing manual and maintainer-owned.
+- Document official upstream Agent Skills for Pydantic, the LangChain
+  ecosystem, and Langfuse; keep package publishing manual and maintainer-owned.
 
 ## [1.0.2] - 2026-11-06
 
