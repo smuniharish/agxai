@@ -250,6 +250,24 @@ Measured on one machine; see
 [Benchmarks](https://agxai.readthedocs.io/en/latest/benchmarks/) for the method,
 memory use and how to reproduce.
 
+## Downloads
+
+<p>
+  <a href="https://clickpy.clickhouse.com/dashboard/agxai"><img src="https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fsql-clickhouse.clickhouse.com%2F%3Fuser%3Ddemo%26query%3DSELECT%2Bsum%2528count%2529%2Bv%2BFROM%2Bpypi.pypi_downloads_per_day%2BWHERE%2Bproject%253D%2527agxai%2527%2BFORMAT%2BJSON&amp;query=%24.data%5B0%5D.v&amp;label=downloads&amp;color=blue&amp;cacheSeconds=3600" alt="Total downloads"></a>
+  <a href="https://clickpy.clickhouse.com/dashboard/agxai"><img src="https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fsql-clickhouse.clickhouse.com%2F%3Fuser%3Ddemo%26query%3DSELECT%2Bsum%2528count%2529%2Bv%2BFROM%2Bpypi.pypi_downloads_per_day%2BWHERE%2Bproject%253D%2527agxai%2527%2BAND%2Bdate%2B%253E%253D%2BtoStartOfWeek%2528today%2528%2529%252C%2B1%2529%2BFORMAT%2BJSON&amp;query=%24.data%5B0%5D.v&amp;label=this+week&amp;color=blue&amp;cacheSeconds=3600" alt="Downloads this week"></a>
+  <a href="https://clickpy.clickhouse.com/dashboard/agxai"><img src="https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fsql-clickhouse.clickhouse.com%2F%3Fuser%3Ddemo%26query%3DSELECT%2Bsum%2528count%2529%2Bv%2BFROM%2Bpypi.pypi_downloads_per_day%2BWHERE%2Bproject%253D%2527agxai%2527%2BAND%2Bdate%2B%253E%253D%2BtoStartOfMonth%2528today%2528%2529%2529%2BFORMAT%2BJSON&amp;query=%24.data%5B0%5D.v&amp;label=this+month&amp;color=blue&amp;cacheSeconds=3600" alt="Downloads this month"></a>
+  <a href="https://clickpy.clickhouse.com/dashboard/agxai"><img src="https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fsql-clickhouse.clickhouse.com%2F%3Fuser%3Ddemo%26query%3DSELECT%2Bsum%2528count%2529%2Bv%2BFROM%2Bpypi.pypi_downloads_per_day%2BWHERE%2Bproject%253D%2527agxai%2527%2BAND%2Bdate%2B%253E%253D%2BtoStartOfYear%2528today%2528%2529%2529%2BFORMAT%2BJSON&amp;query=%24.data%5B0%5D.v&amp;label=this+year&amp;color=blue&amp;cacheSeconds=3600" alt="Downloads this year"></a>
+</p>
+<p>
+  <a href="https://clickpy.clickhouse.com/dashboard/agxai"><img src="https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fsql-clickhouse.clickhouse.com%2F%3Fuser%3Ddemo%26query%3DSELECT%2BarrayStringConcat%2528groupArray%2528concat%2528toString%2528y%2529%252C%2B%2527%253A%2B%2527%252C%2BtoString%2528c%2529%2529%2529%252C%2B%2527%2B%257C%2B%2527%2529%2Bv%2BFROM%2B%2528SELECT%2BtoYear%2528date%2529%2By%252C%2Bsum%2528count%2529%2Bc%2BFROM%2Bpypi.pypi_downloads_per_day%2BWHERE%2Bproject%253D%2527agxai%2527%2BGROUP%2BBY%2By%2BORDER%2BBY%2By%2529%2BFORMAT%2BJSON&amp;query=%24.data%5B0%5D.v&amp;label=by+year&amp;color=blue&amp;cacheSeconds=3600" alt="Downloads by year"></a>
+  <a href="https://clickpy.clickhouse.com/dashboard/agxai"><img src="https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fsql-clickhouse.clickhouse.com%2F%3Fuser%3Ddemo%26query%3DSELECT%2BarrayStringConcat%2528groupArray%2528concat%2528country_code%252C%2B%2527%2B%2527%252C%2BtoString%2528c%2529%2529%2529%252C%2B%2527%2B%257C%2B%2527%2529%2Bv%2BFROM%2B%2528SELECT%2Bcountry_code%252C%2Bsum%2528count%2529%2Bc%2BFROM%2Bpypi.pypi_downloads_per_day_by_version_by_country%2BWHERE%2Bproject%253D%2527agxai%2527%2BGROUP%2BBY%2Bcountry_code%2BORDER%2BBY%2Bc%2BDESC%2BLIMIT%2B5%2529%2BFORMAT%2BJSON&amp;query=%24.data%5B0%5D.v&amp;label=top+countries&amp;color=blue&amp;cacheSeconds=3600" alt="Top 5 download countries"></a>
+</p>
+
+The counts come from the public ClickHouse PyPI dataset, which refreshes daily
+and may be about a day behind. Shields caches badge images for up to an hour;
+GitHub may cache them longer. Weeks start on Monday (UTC). For interactive
+charts, visit the [ClickPy dashboard](https://clickpy.clickhouse.com/dashboard/agxai).
+
 ## Examples
 
 Complete programs in [`examples/`](https://github.com/smuniharish/agxai/tree/master/examples),
