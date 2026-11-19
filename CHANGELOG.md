@@ -7,7 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-- Add live PyPI download badges to the README and documentation home page.
+- Add live PyPI download badges, with country totals grouped alphabetically, to
+  the README and documentation home page.
 - Raise direct dependency minimums to current stable releases and refresh the
   lockfile for version 1.0.3.
 - Simplify public architecture diagrams and document the publication-review
